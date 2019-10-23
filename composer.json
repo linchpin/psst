@@ -1,0 +1,35 @@
+{
+  "name": "linchpin/psst",
+  "description": "Pretty Secure Secret Transmission",
+  "keywords": ["wordpress", "plugin", "linchpin"],
+  "homepage": "https://linchpin.com/plugins/psst",
+  "license": "GPL-2.0+",
+  "authors": [{
+    "name": "linchpin",
+    "email": "sayhi@linchpin.com",
+    "homepage": "https://linchpin.com"
+  }],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "type": "wordpress-plugin",
+  "support": {
+    "issues": "https://github.com/linchpin/psst/issues",
+    "forum": "https://wordpress.org/support/plugin/psst",
+    "wiki": "https://github.com/linchpin/psst/wiki",
+    "source": "https://github.com/linchpin/psst/"
+  },
+  "require": {
+    "php": ">=7.1.29",
+    "composer/installers": "^1.0",
+    "defuse/php-encryption": "^2.2"
+  },
+  "require-dev": {
+    "wpreadme2markdown/wpreadme2markdown": "*"
+  },
+  "repositories":[
+    {
+      "type":"composer",
+      "url":"https://wpackagist.org"
+    }
+  ]
+}
