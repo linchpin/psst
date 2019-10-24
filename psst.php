@@ -34,7 +34,7 @@ if ( ! defined( 'PSST_URL' ) ) {
 }
 
 if ( ! defined( 'PSST_VERSION' ) ) {
-	define( 'PSST_VERSION', '1.0.1' );
+	define( 'PSST_VERSION', '1.0.2' );
 }
 
 /**

@@ -18,4 +18,10 @@ By default 3 cron events are scheduled
 
 ## Changelog
 
+Version: 1.0.2
+
+* Cleaned Up Markup
+* Fixed an issue where warning would show at incorrect times
+* Fixed an issue with password protected secrets throwing a fatal error
+
 Version: 1.0.0 Initial Release:
