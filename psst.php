@@ -3,7 +3,7 @@
  * Plugin Name: psst (Pretty Secure Secret Transmission)
  * Description: As simple plugin to send a relatively secure message to an individuals.
  * Plugin URI:  https://wordpress.org/plugins/courier
- * Version: 1.0.0
+ * Version: 1.0.1
  * License: GPL-2.0+
  * Author URI: https://linchpin.com
  * Text Domain: psst
@@ -34,7 +34,7 @@ if ( ! defined( 'PSST_URL' ) ) {
 }
 
 if ( ! defined( 'PSST_VERSION' ) ) {
-	define( 'PSST_VERSION', '1.0.0' );
+	define( 'PSST_VERSION', '1.0.1' );
 }
 
 /**

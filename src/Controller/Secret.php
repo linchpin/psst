@@ -32,13 +32,40 @@ class Secret {
 
 		add_filter( 'query_vars', [ $this, 'query_vars' ] );
 		add_filter( 'post_password_required', [ $this, 'skip_password_on_confirm' ], 10, 2 );
+
+		add_action( 'the_post', [ $this, 'the_post' ] );
 		add_filter( 'the_content', [ $this, 'confirmation_content' ], 2, 1 );
+		add_action( 'loop_end', [ $this, 'loop_end' ] );
 
 		add_action( 'pre_get_posts', [ $this, 'display_confirmation' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'wp_enqueue_scripts' ], 11 );
 		add_action( 'after_setup_theme', [ $this, 'add_editor_styles' ] );
 
 		add_shortcode( 'secret_form', [ $this, 'secret_form' ] );
+	}
+
+	/**
+	 * Add or remove the wpautop filter
+	 *
+	 * @since 1.0.0
+	 * @param mixed $post Current Post Object.
+	 */
+	public function the_post( $post ) {
+
+		if ( 'secret' !== $post->post_type ) {
+			return;
+		}
+
+		remove_filter( 'the_content', 'wpautop' );
+	}
+
+	/**
+	 * Reset everything back to normal
+	 */
+	public function loop_end() {
+		if ( ! has_filter( 'the_content', 'wpautop' ) ) {
+			add_filter( 'the_content', 'wpautop' );
+		}
 	}
 
 	/**
@@ -87,8 +114,19 @@ class Secret {
 
 		// Unencrypt our business
 		if ( 'secret' === $post->post_type && is_single() && in_the_loop() && is_main_query() ) {
-			$key     = Key::loadFromAsciiSafeString( PSST_CRYPTO_KEY );
-			$content = Crypto::decrypt( $content, $key );
+
+			$refresh_warning = '';
+
+			if ( ! post_password_required() ) {
+				$key     = Key::loadFromAsciiSafeString( PSST_CRYPTO_KEY );
+				$content = Crypto::decrypt( $content, $key );
+
+				$warning = new View();
+				$refresh_warning = $warning->get_text_view( 'secret-refresh-warning' );
+				$refresh_warning = apply_filters( 'psst_refresh_warning', $refresh_warning );
+			}
+
+			$content = $content . $refresh_warning;
 		}
 
 		return $content;
@@ -237,12 +275,15 @@ class Secret {
 
 		$secret_editor_options = [
 			'media_buttons' => false,
+			'teeny'         => true,
+			'editor_height' => 180,
+			'quick_tags'    => false,
 			'tinymce'       => [
 				'toolbar1'              => 'bold,italic,underline,separator,link,unlink',
 				'toolbar2'              => '',
 				'toolbar3'              => '',
 				'statusbar'             => false,
-				'autoresize_min_height' => 100,
+				'autoresize_min_height' => 180,
 				'wp_autoresize_on'      => true,
 				'plugins'               => 'wpautoresize',
 			],

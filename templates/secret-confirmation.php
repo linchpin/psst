@@ -35,8 +35,14 @@
 				<?php wp_nonce_field( 'create_secret', 'create_secret_nonce' ); ?>
 				<input type="hidden" name="secret_confirm_key" value="<?php echo esc_attr( $secret_confirm_key ); ?>" />
 				<button type="submit" class="alert button small expanded"><?php esc_html_e( 'Shred Secret Link', 'psst' ); ?></button>
-				<div class="callout secondary">
+				<div class="callout secondary padding-all-none" data-closeable>
+					<h3><?php esc_html_e( 'Quick Tip!', 'psst' ); ?></h3>
+					<p>
 					<?php esc_html_e( 'You still have the ability to shred a secret before it is read. If you shred a secret link before the recipient views it, the link will no longer work', 'psst' ); ?>
+					</p>
+					<button class="close-button" aria-label="Dismiss alert" type="button" data-close>
+						<span aria-hidden="true">&times;</span>
+					</button>
 				</div>
 			</form>
 		</div>

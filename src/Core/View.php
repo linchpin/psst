@@ -49,7 +49,6 @@ class View {
 		include_once $view_file;
 	}
 
-
 	/**
 	 * Assign variable for substitution in templates.
 	 *
