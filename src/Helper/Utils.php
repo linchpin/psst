@@ -95,6 +95,8 @@ class Utils {
 
 	/**
 	 * Get a list of our scheduled expiration times.
+	 *
+	 * @since 1.0
 	 */
 	public static function psst_schedule_selector() {
 
@@ -117,7 +119,7 @@ class Utils {
 	/**
 	 * Make sure that the unique slug we generated is unique.
 	 *
-	 * @param $slug
+	 * @param  string $slug Pass a slug and make sure we don't have the same slug already in the database.
 	 *
 	 * @return bool
 	 */
@@ -152,5 +154,43 @@ class Utils {
 		}
 
 		return $generated_post_name;
+	}
+
+	/**
+	 * Return whether or not the default WP Cron process is being used.
+	 * Typically with alternate/true crons the default WordPress cron will
+	 * be disabled with the DISABLE_CRON constant
+	 *
+	 * @since 1.0
+	 *
+	 * @return bool
+	 */
+	public static function is_wp_cron_disabled() {
+		return ( defined( 'DISABLE_CRON' ) && true === DISABLE_CRON );
+	}
+
+	/**
+	 * Get an array of safe markup and classes to be used
+	 * on settings pages.
+	 *
+	 * @since 1.0
+	 *
+	 * @return mixed|void
+	 */
+	public static function get_safe_markup() {
+		$safe_content = array(
+			'a'      => array(
+				'href' => array(),
+			),
+			'span'   => array(),
+			'strong' => array(),
+			'p'      => array(),
+			'br'     => array(),
+			'em'     => array(),
+			'i'      => array(),
+			'u'      => array(),
+		);
+
+		return apply_filters( 'psst_safe_markup', $safe_content );
 	}
 }

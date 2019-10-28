@@ -121,7 +121,7 @@ class Secret {
 				$key     = Key::loadFromAsciiSafeString( PSST_CRYPTO_KEY );
 				$content = Crypto::decrypt( $content, $key );
 
-				$warning = new View();
+				$warning         = new View();
 				$refresh_warning = $warning->get_text_view( 'secret-refresh-warning' );
 				$refresh_warning = apply_filters( 'psst_refresh_warning', $refresh_warning );
 			}
@@ -209,6 +209,8 @@ class Secret {
 		if ( $post && 'secret' !== $post->post_type ) {
 			return;
 		}
+
+		// 'Slackbot-LinkExpanding 1.0'
 
 		// If the post isn't protected, delete it after it's been viewed.
 		// Also make sure that we aren't viewing the confirmation page.
@@ -309,7 +311,7 @@ class Secret {
 		$generated_confirm_key = Utils::create_unique_slug();
 
 		$key     = Key::loadFromAsciiSafeString( PSST_CRYPTO_KEY );
-		$message = Crypto::encrypt( sanitize_textarea_field( $_POST['secret'] ), $key );
+		$message = Crypto::encrypt( wp_kses( $_POST['secret'], Utils::get_safe_markup() ), $key );
 
 		$secret_post = [
 			'post_content' => $message,

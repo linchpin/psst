@@ -1,6 +1,7 @@
 <?php
 namespace Psst\Controller;
 
+use Defuse\Crypto\Key;
 use \Psst\Model\Config;
 
 /**
@@ -52,6 +53,12 @@ class Install {
 		// Example
 		// if ( version_compare( $current_version, '1.0.5', '<' ) ) {
 		// }
+
+		$key = Key::createNewRandomKey();
+
+		// On Install generate an encryption key and save it in the options.
+		// Display a notice to the user that they should copy the key to their wp-config.php
+		$plugin_options['encryption_key'] = $key->saveToAsciiSafeString();
 
 		// Keep the plugin version up to date
 		$plugin_options['plugin_version'] = $this->config->get( 'version' );
