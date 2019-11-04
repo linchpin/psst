@@ -24,6 +24,9 @@
 						</button>
 					</div>
 				</div>
+				<div>
+					<strong><?php printf( __( 'Expires: %s', 'psst' ), esc_html( $secret_expiration_date ) ); ?></strong>
+				</div>
 			</div>
 		</div>
 	</div>
