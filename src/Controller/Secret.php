@@ -18,7 +18,7 @@ class Secret {
 	public function register_actions() {
 		add_action( 'init', [ $this, 'register_custom_post_type' ] );
 		add_action( 'init', [ $this, 'add_rewrite_rules' ] );
-		add_action( 'cmb2_admin_init', array( $this, 'register_fields' ) );
+		add_action( 'cmb2_admin_init', [ $this, 'register_fields' ] );
 
 		// Handle Secret Creation
 		add_action( 'admin_post_psst_create_secret', [ $this, 'create_secret' ] );
@@ -28,19 +28,25 @@ class Secret {
 		add_action( 'admin_post_psst_delete_secret', [ $this, 'delete_secret' ] );
 		add_action( 'admin_post_nopriv_psst_delete_secret', [ $this, 'delete_secret' ] );
 
+		// Handle Secret View
+		add_action( 'admin_post_psst_view_secret', [ $this, 'view_secret' ] );
+		add_action( 'admin_post_nopriv_psst_view_secret', [ $this, 'view_secret' ] );
+
 		add_action( 'wp', [ $this, 'track_viewed_secret' ] );
 
-		add_filter( 'query_vars', [ $this, 'query_vars' ] );
-		add_filter( 'post_password_required', [ $this, 'skip_password_on_confirm' ], 10, 2 );
-
 		add_action( 'the_post', [ $this, 'the_post' ] );
-		add_filter( 'the_content', [ $this, 'confirmation_content' ], 2, 1 );
 		add_action( 'loop_end', [ $this, 'loop_end' ] );
 
 		add_action( 'pre_get_posts', [ $this, 'display_confirmation' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'wp_enqueue_scripts' ], 11 );
 		add_action( 'after_setup_theme', [ $this, 'add_editor_styles' ] );
 
+		// Filters
+		add_filter( 'query_vars', [ $this, 'query_vars' ] );
+		add_filter( 'post_password_required', [ $this, 'skip_password_on_confirm' ], 10, 2 );
+		add_filter( 'the_content', [ $this, 'display_secret_content' ], 2, 1 );
+
+		// Shortcodes
 		add_shortcode( 'secret_form', [ $this, 'secret_form' ] );
 	}
 
@@ -95,28 +101,113 @@ class Secret {
 	}
 
 	/**
-	 * When showing the confirmation page. Do not show the message, show the confirmation message for the message.
-	 * @since 1.0.0
+	 * Check to see if we are viewing a secret creation confirmation page.
+	 *
+	 * @since  1.0.4
+	 * @return bool
 	 */
-	public function confirmation_content( $content ) {
+	private function is_confirmation() {
 
 		global $post;
 
-		if ( 'secret' === $post->post_type && is_single() && in_the_loop() && is_main_query() && get_query_var( 'confirm_secret_key' ) ) {
+		if ( 'secret' === $post->post_type &&
+			is_single() &&
+			in_the_loop() &&
+			is_main_query() &&
+			get_query_var( 'confirm_secret_key' )
+		) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check to see if we are viewing the "click to view" page.
+	 *
+	 * Usage: This is used to determine if we are viewing the click to view page
+	 * vs the actual secret.
+	 *
+	 * @since  1.0.4
+	 * @return bool
+	 */
+	private function is_click_to_view() {
+		global $post;
+
+		if ( 'secret' === $post->post_type &&
+			is_single() &&
+			in_the_loop() &&
+			is_main_query() &&
+			get_query_var( 'confirm_secret_click' )
+		) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check to see if we clicked the view secret button
+	 *
+	 * @since  1.0.4
+	 * @return bool
+	 */
+	private function can_view_secret() {
+		global $post;
+
+		if ( 'secret' === $post->post_type &&
+			is_single() &&
+			in_the_loop() &&
+			is_main_query() &&
+			'true' === get_query_var( 'confirm_secret_view' )
+		) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determine when to show the confirmation page, view secret confirmation or the secret itself.
+	 *
+	 * @since 1.0.0
+	 */
+	public function display_secret_content( $content ) {
+
+		global $post;
+
+		// If it's not a secret then don't filter anything
+		if ( 'secret' !== $post->post_type ) {
+			return $content;
+		}
+
+		if ( $this->is_confirmation() ) {
 
 			wp_enqueue_script( 'clipboard', PSST_PLUGIN_URL . 'js/clipboard.min.js', [], PSST_VERSION, true );
 
 			$confirmation = new View();
+			$timestamp    = get_post_meta( $post->ID, '_psst_secret_expiration', true );
+			$date         = date_i18n(
+				get_option( 'date_format' ),
+				$timestamp
+			);
+			$time         = date_i18n(
+				get_option( 'time_format' ),
+				$timestamp
+			);
+
+			$datetime = sprintf( '%1$s @ %2$s', $date, $time );
+			$datetime = apply_filters( 'psst_date_time_format', $datetime );
+
+			$confirmation->assign( 'secret_expiration_date', $datetime );
 			$confirmation->assign( 'secret_confirm_key', get_post_meta( $post->ID, '_psst_secret_confirm_key', true ) );
 
 			return $confirmation->get_text_view( 'secret-confirmation' );
 		}
 
-		// Unencrypt our business
-		if ( 'secret' === $post->post_type && is_single() && in_the_loop() && is_main_query() ) {
+		$refresh_warning = '';
 
-			$refresh_warning = '';
-
+		if ( $this->can_view_secret() ) {
 			if ( ! post_password_required() ) {
 				$key     = Key::loadFromAsciiSafeString( PSST_CRYPTO_KEY );
 				$content = Crypto::decrypt( $content, $key );
@@ -125,9 +216,16 @@ class Secret {
 				$refresh_warning = $warning->get_text_view( 'secret-refresh-warning' );
 				$refresh_warning = apply_filters( 'psst_refresh_warning', $refresh_warning );
 			}
-
-			$content = $content . $refresh_warning;
+		} else {
+			// Show the OK button
+			if ( ! post_password_required() ) {
+				$secret_view = new View();
+				$content     = $secret_view->get_text_view( 'secret' );
+				$content     = apply_filters( 'psst_secret_view', $content );
+			}
 		}
+
+		$content = $content . $refresh_warning;
 
 		return $content;
 	}
@@ -141,7 +239,10 @@ class Secret {
 
 		$secret_confirm_key = get_query_var( 'confirm_secret_key' );
 
-		if ( ! is_admin() && ( $query->is_main_query() && 'true' === get_query_var( 'confirm_secret' ) && 'secret' === $query->query_vars['post_type'] ) ) {
+		if ( ! is_admin() &&
+			( $query->is_main_query() &&
+				'true' === get_query_var( 'confirm_secret' ) &&
+				'secret' === $query->query_vars['post_type'] ) ) {
 
 			if ( ! empty( $secret_confirm_key ) ) {
 
@@ -190,12 +291,15 @@ class Secret {
 	public function query_vars( $qvars ) {
 		$qvars[] = 'confirm_secret';
 		$qvars[] = 'confirm_secret_key';
+		$qvars[] = 'confirm_secret_click';
+		$qvars[] = 'confirm_secret_view';
 		return $qvars;
 	}
 
 	/**
 	 * Track that a secret has been viewed so it can be deleted.
 	 * Be sure to exclude if you are viewing the password protected form.
+	 *
 	 * @since 1.0.0
 	 */
 	public function track_viewed_secret() {
@@ -214,20 +318,26 @@ class Secret {
 
 		// If the post isn't protected, delete it after it's been viewed.
 		// Also make sure that we aren't viewing the confirmation page.
-		if ( ! post_password_required() && 'true' !== get_query_var( 'confirm_secret' ) && ! is_404() ) {
-		 	wp_delete_post( $post->ID, true );
+		if ( ! post_password_required() &&
+			'true' !== get_query_var( 'confirm_secret' ) &&
+			'true' === get_query_var( 'confirm_secret_view' ) &&
+			! is_404() ) {
+
+			wp_delete_post( $post->ID, true );
 		}
 	}
 
 	/**
 	 * Create custom rewrite rule for secrets.
+	 *
 	 * @since 1.0.0
 	 */
 	public function add_rewrite_rules() {
 		add_rewrite_tag( '%secret_id%', '([0-9A-Za-z]+)' );
 		add_rewrite_tag( '%confirm_secret_key%', '([0-9A-Za-z]+)' );
 		add_rewrite_rule( 'secret/confirm/(.*)/?', 'index.php?&post_type=secret&confirm_secret=true&confirm_secret_key=$matches[1]', 'top' );
-		add_rewrite_rule( 'secret/(.*)/?', 'index.php?&secret=$matches[1]', 'top' );
+		add_rewrite_rule( 'secret/view/(.*)/?', 'index.php?&secret=$matches[1]&confirm_secret_view=true', 'top' );
+		add_rewrite_rule( 'secret/(.*)/?', 'index.php?&secret=$matches[1]&confirm_secret_click=true', 'top' );
 		add_rewrite_rule( 'secret/removed/?', 'index.php?&removed_secret=true', 'top' );
 	}
 
@@ -341,7 +451,7 @@ class Secret {
 				$expire_date = new \DateTime();
 				date_add( $expire_date, new \DateInterval( "PT{$expiration}M" ) );
 
-				update_post_meta( $new_secret_id, '_secret_expiration', $expire_date->getTimestamp() );
+				update_post_meta( $new_secret_id, '_psst_secret_expiration', $expire_date->getTimestamp() );
 			}
 
 			$confirm_url = site_url( 'secret/confirm/' . $generated_confirm_key );
@@ -349,6 +459,23 @@ class Secret {
 			wp_safe_redirect( $confirm_url, 301, esc_attr__( 'Psst', 'psst' ) );
 			exit();
 		}
+	}
+
+	/**
+	 * Create our secret Post on submission
+	 *
+	 * @since 1.0.0
+	 */
+	public function view_secret() {
+
+		wp_verify_nonce( 'view_secret_nonce', $_POST['view_secret_nonce'] );
+
+		$secret_key = trim( $_POST[ '_wp_http_referer' ], '/' ); // Get the key from the referrering page
+		$secret_key = explode( '/', $secret_key );
+		$secret     = site_url( '/secret/view/' . $secret_key[1] );
+
+		wp_safe_redirect( $secret, 301, esc_attr__( 'Psst', 'psst' ) );
+		exit();
 	}
 
 	/**
