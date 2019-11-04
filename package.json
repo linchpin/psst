@@ -1,7 +1,7 @@
 {
   "name": "linchpin-psst",
   "title": "Pretty Secure Secret Transmission",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A pretty secure and simple plugin to transmit messages secretly.",
   "homepage": "https://linchpin.com",
   "main": "gulp.babel.js",

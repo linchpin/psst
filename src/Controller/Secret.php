@@ -32,10 +32,9 @@ class Secret {
 		add_action( 'admin_post_psst_view_secret', [ $this, 'view_secret' ] );
 		add_action( 'admin_post_nopriv_psst_view_secret', [ $this, 'view_secret' ] );
 
-		add_action( 'wp', [ $this, 'track_viewed_secret' ] );
-
 		add_action( 'the_post', [ $this, 'the_post' ] );
 		add_action( 'loop_end', [ $this, 'loop_end' ] );
+		add_action( 'loop_end', [ $this, 'track_viewed_secret' ] );
 
 		add_action( 'pre_get_posts', [ $this, 'display_confirmation' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'wp_enqueue_scripts' ], 11 );
@@ -304,25 +303,33 @@ class Secret {
 	 */
 	public function track_viewed_secret() {
 
-		global $post;
+		global $post, $wp_query;
 
 		if ( is_admin() ) {
 			return;
 		}
 
+		if ( empty( $post ) ) {
+			return;
+		}
+
+		// Don't track if our post isn't a secret
 		if ( $post && 'secret' !== $post->post_type ) {
 			return;
 		}
 
-		// 'Slackbot-LinkExpanding 1.0'
+		// Don't track if we're on the confirm click view
+		if ( 'true' === get_query_var( 'confirm_secret_click' ) ) {
+			return;
+		}
 
 		// If the post isn't protected, delete it after it's been viewed.
 		// Also make sure that we aren't viewing the confirmation page.
 		if ( ! post_password_required() &&
-			'true' !== get_query_var( 'confirm_secret' ) &&
 			'true' === get_query_var( 'confirm_secret_view' ) &&
-			! is_404() ) {
-
+			is_single() &&
+			! is_404()
+		) {
 			wp_delete_post( $post->ID, true );
 		}
 	}

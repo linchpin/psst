@@ -3,7 +3,7 @@
  * Plugin Name: psst (Pretty Secure Secret Transmission)
  * Description: As simple plugin to send a relatively secure message to an individuals. Use at own risk
  * Plugin URI:  https://github.com/linchpin/psst
- * Version: 1.0.4
+ * Version: 1.0.5
  * License: GPL-2.0+
  * Author URI: https://linchpin.com
  * Text Domain: psst
@@ -38,7 +38,7 @@ if ( ! defined( 'PSST_PLUGIN_NAME' ) ) {
 }
 
 if ( ! defined( 'PSST_VERSION' ) ) {
-	define( 'PSST_VERSION', '1.0.4' );
+	define( 'PSST_VERSION', '1.0.5' );
 }
 
 /**
