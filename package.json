@@ -1,7 +1,7 @@
 {
   "name": "linchpin-psst",
   "title": "Pretty Secure Secret Transmission",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A pretty secure and simple plugin to transmit messages secretly.",
   "homepage": "https://linchpin.com",
   "main": "gulp.babel.js",
@@ -15,7 +15,33 @@
     "url": "https://linchpin.com"
   },
   "license": "GPL",
-  "devDependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/register": "^7.0.0",
+    "autoprefixer": "^9.1.5",
+    "babel-loader": "^8.0.4",
+    "browser-sync": "^2.10.0",
+    "gulp": "^4.0.0",
+    "gulp-babel": "^8.0.0",
+    "gulp-clean-css": "^4.2.0",
+    "gulp-cli": "^2.0.1",
+    "gulp-concat": "^2.5.2",
+    "gulp-extname": "^0.2.0",
+    "gulp-if": "^3.0.0",
+    "gulp-imagemin": "^6.1.0",
+    "gulp-load-plugins": "^2.0.1",
+    "gulp-postcss": "^8.0.0",
+    "gulp-sass": "^4.0.1",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-uglify": "^3.0.1",
+    "js-yaml": "^3.4.6",
+    "rimraf": "^3.0.0",
+    "vinyl-named": "^1.1.0",
+    "webpack": "^4.20.2",
+    "webpack-stream": "^5.1.1",
+    "yargs": "^14.0.0"
+  },
   "keywords": [],
   "dependencies": {
     "clipboard": "^2.0.4"

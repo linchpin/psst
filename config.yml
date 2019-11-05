@@ -22,10 +22,9 @@ PATHS:
   dist: ""
   # Paths to static assets that aren't images, CSS, or JavaScript
   assets:
-    - "assets/fonts/*"
     - "!assets/{img,js,scss,css}/**/*"
   # Paths to JavaScript entry points for webpack to bundle modules
   entries:
-    - "assets/js/psst-admin.js"
+    - "assets/js/psst.js"
 
 LOCAL_PATH: "http://psst.test"
