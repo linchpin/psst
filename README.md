@@ -1,3 +1,5 @@
+![Linchpin](https://github.com/linchpin/brand-assets/raw/master/github-opensource-banner.png)
+
 # Psst Documentation
 
 ### Pretty Secure Secret Transactions
