@@ -94,7 +94,6 @@ class Secret {
 		global $post;
 
 		if ( is_single() && 'secret' === $post->post_type ) {
-			wp_enqueue_script( 'clipboard', PSST_PLUGIN_URL . 'js/clipboard.min.js', [], PSST_VERSION, true );
 			wp_enqueue_script( 'psst', PSST_PLUGIN_URL . 'js/psst.js', [ 'clipboard' ], PSST_VERSION, true );
 		}
 	}
@@ -394,11 +393,9 @@ class Secret {
 
 		$secret_editor_options = [
 			'media_buttons' => false,
-			'teeny'         => true,
 			'editor_height' => 180,
-			'quick_tags'    => false,
 			'tinymce'       => [
-				'toolbar1'              => 'bold,italic,underline,separator,link,unlink',
+				'toolbar1'              => 'bold,italic,underline,separator,alignleft,aligncenter,alignright,separator,link,unlink,undo,redo',
 				'toolbar2'              => '',
 				'toolbar3'              => '',
 				'statusbar'             => false,
@@ -454,6 +451,12 @@ class Secret {
 			if ( isset( $_POST['expiration'] ) && '' !== $_POST['expiration'] ) {
 
 				$expiration = (int) $_POST['expiration'];
+
+				$allowed_expiration = Utils::get_secret_expiration_schedule();
+
+				if ( ! array_key_exists( $expiration, $allowed_expiration ) ) {
+					$expiration = key( $allowed_expiration[0] );
+				}
 
 				$expire_date = new \DateTime();
 				date_add( $expire_date, new \DateInterval( "PT{$expiration}M" ) );
