@@ -6,6 +6,7 @@
 			"name": "psst",
 			"extra-files": [
 				"psst.php",
+				"readme.txt",
 				"README.md",
 				".release-please-manifest.json",
 				{

@@ -1,0 +1,121 @@
+name: Deploy to WordPress.org
+
+# Commits a published release to the WordPress.org SVN repository as trunk plus
+# a version tag, and refreshes the listing assets from .wordpress-org/. Mirrors
+# post-type-spotlight. linchpin/actions has no reusable for this yet, so it is
+# hand-rolled here, like every other Linchpin plugin on WordPress.org.
+#
+# Fires on `release: published`, which only happens because release-please runs
+# under GH_BOT_TOKEN. A release created with GITHUB_TOKEN raises no release
+# event, so this workflow would never run.
+#
+# The package committed is build/psst, produced by scripts/build.sh: the same
+# directory Plugin Check runs against and the same one that becomes the GitHub
+# release zip and the packagist.linchpin.com package. BUILD_DIR hands that
+# directory to the deploy action as-is; the action then ignores .distignore,
+# which is fine because the build script has already applied it.
+#
+# The manual trigger exists for the first deploy and for repairs. Its dry-run
+# builds the package and stages everything in SVN but skips the commit, which
+# is how to confirm the file set before the plugin's first release.
+
+on:
+    release:
+        types: [published]
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Release tag to deploy, e.g. v2.0.0"
+                required: true
+                type: string
+            dry-run:
+                description: "Stage in SVN but do not commit"
+                required: false
+                type: boolean
+                default: true
+
+permissions:
+    contents: read
+
+# One deploy per tag at a time. A re-run for the same tag while the first is
+# still committing would fight over the SVN working copy.
+concurrency:
+    group: wporg-deploy-${{ github.event.release.tag_name || inputs.tag }}
+    cancel-in-progress: false
+
+jobs:
+    # Nothing ships to WordPress.org that fails Plugin Check, the same gate the
+    # release workflow puts in front of the packagist publish.
+    plugin-check:
+        name: Plugin Check
+        uses: ./.github/workflows/plugin-check.yml
+        secrets: inherit
+
+    deploy:
+        name: Deploy to WordPress.org
+        needs: plugin-check
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+              with:
+                  # The release's own commit, or the tag a manual run names.
+                  # Without this a workflow_dispatch checks out main, which may
+                  # already be ahead of the release.
+                  ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.3'
+                  coverage: none
+                  tools: composer:v2
+
+            - name: Install Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: '.nvmrc'
+                  cache: 'npm'
+
+            # The same command a developer, Plugin Check and the release workflow
+            # run. It compiles both bundles, installs production Composer
+            # dependencies, strips the release-please markers from readme.txt,
+            # and asserts every runtime path before zipping.
+            - name: Build the distributable
+              run: bash scripts/build.sh
+              env:
+                  CI: true
+
+            # The SVN tag is the bare version. release-please tags with a `v`
+            # prefix (include-v-in-tag), and WordPress.org expects `2.0.0`, not
+            # `v2.0.0`, to match the readme's Stable tag.
+            - name: Resolve the version
+              id: version
+              env:
+                  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+              run: |
+                  set -euo pipefail
+                  VERSION="${TAG#v}"
+                  STABLE="$(sed -n 's/^Stable tag:[[:space:]]*//p' build/psst/readme.txt | tr -d '\r')"
+                  if [ "$VERSION" != "$STABLE" ]; then
+                    echo "::error::Tag says ${VERSION} but the built readme.txt says Stable tag: ${STABLE}. WordPress.org would serve the wrong version."
+                    exit 1
+                  fi
+                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+            - name: Deploy to the WordPress.org SVN repository
+              uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # v2.3.0
+              with:
+                  # The GitHub release already carries build/psst.zip from the
+                  # release workflow; a second zip here would only differ by
+                  # the SVN checkout's line endings.
+                  generate-zip: false
+                  dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+              env:
+                  SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+                  SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+                  SLUG: psst
+                  VERSION: ${{ steps.version.outputs.version }}
+                  BUILD_DIR: build/psst
+                  ASSETS_DIR: .wordpress-org

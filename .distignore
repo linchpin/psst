@@ -45,6 +45,13 @@ release-please-config.json
 /plans
 /playground
 /scripts
+/test-results
+/playwright-report
+# WordPress.org listing assets. Both 10up actions copy this directory to the
+# SVN /assets tree themselves; it never belongs in trunk or the zip.
+/.wordpress-org
+# Repository-facing artwork: the GitHub social preview and the logo sources.
+/assets
 /node_modules
 /blocks/node_modules
 /blocks/src

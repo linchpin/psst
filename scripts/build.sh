@@ -55,6 +55,7 @@ copy_list=(
 	composer.json
 	LICENSE
 	README.md
+	readme.txt
 )
 
 # `build` and `blocks/build` are handled after this loop: build/ is the
@@ -78,10 +79,21 @@ rsync -a "blocks/build" "${OUTPUT_DIR}/blocks/"
 mkdir -p "${OUTPUT_DIR}/build"
 rsync -a --exclude "/${SLUG}" --exclude "/${SLUG}.zip" "build/" "${OUTPUT_DIR}/build/"
 
+# Strip the release-please marker lines from the packaged readme.txt.
+#
+# The WordPress.org readme parser and Plugin Check read the header block as
+# contiguous lines and stop at the first line that is not a header. The markers
+# sit between "Requires PHP" and "Stable tag", so left in they hide the Stable
+# tag, License and License URI below them. The WordPress.org deploy hands this
+# directory to SVN as-is, so this is the one place the strip has to happen.
+sed -i.bak '/x-release-please-start-version/d;/x-release-please-end/d' "${OUTPUT_DIR}/readme.txt"
+rm -f "${OUTPUT_DIR}/readme.txt.bak"
+
 # Assertions, each guarding a runtime path with nothing else behind it.
 for required in \
 	psst.php \
 	uninstall.php \
+	readme.txt \
 	includes/Core/Bootstrap.php \
 	vendor/autoload.php \
 	vendor/woocommerce/action-scheduler/action-scheduler.php \
@@ -141,6 +153,14 @@ fi
 
 if [ "${HEADER_VERSION}" != "${MANIFEST_VERSION}" ]; then
 	echo "::error::Plugin header says ${HEADER_VERSION}, release-please manifest says ${MANIFEST_VERSION}."
+	exit 1
+fi
+
+# WordPress.org serves whatever Stable tag names, so it has to be this build.
+STABLE_TAG="$(sed -n 's/^Stable tag:[[:space:]]*//p' "${OUTPUT_DIR}/readme.txt" | head -1 | tr -d '\r')"
+
+if [ "${STABLE_TAG}" != "${HEADER_VERSION}" ]; then
+	echo "::error::readme.txt says Stable tag: ${STABLE_TAG}, plugin header says ${HEADER_VERSION}."
 	exit 1
 fi
 

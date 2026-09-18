@@ -10,6 +10,10 @@
  * @package Linchpin\Psst
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Linchpin\Psst\Controller\Blocks;
 use Linchpin\Psst\Model\Blocks\Secret_Viewer;
 

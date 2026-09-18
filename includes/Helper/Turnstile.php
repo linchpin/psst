@@ -21,6 +21,7 @@ use Linchpin\Psst\Model\Settings;
  */
 final class Turnstile {
 
+	// phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Cloudflare's verification endpoint; an opt-in third-party service disclosed in readme.txt.
 	private const ENDPOINT = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 	/**
