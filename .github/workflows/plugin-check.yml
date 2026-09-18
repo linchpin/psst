@@ -1,0 +1,26 @@
+name: WordPress Plugin Check
+
+on:
+    # Not on the pull-request path. Psst is published to packagist.linchpin.com
+    # and installed by Composer, so the check is advisory rather than a
+    # submission gate. `workflow_call` lets the release path gate on it and
+    # `workflow_dispatch` runs it against a branch on demand.
+    workflow_call:
+    workflow_dispatch:
+
+# No `concurrency` block: invoked through workflow_call, `github.workflow`
+# resolves to the caller's name and a group here can deadlock with the caller's.
+
+permissions:
+    contents: read
+
+jobs:
+    plugin-check:
+        name: Plugin Check
+        uses: linchpin/actions/.github/workflows/plugin-check.yml@v4
+        secrets: inherit
+        with:
+            build_dir: ./build/psst
+            build_command: bash scripts/build.sh
+            php_version: '8.3'
+            exclude_directories: vendor,node_modules

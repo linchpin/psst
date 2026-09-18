@@ -1,0 +1,11 @@
+{
+  "agent": "claude",
+  "agentBasePath": "~/GitHub",
+  "wordpress": {
+    "pluginSlug": "psst",
+    "defaultEnvironment": "studio-psst",
+    "environments": {
+      "studio-psst": "~/Studio/psst/wp-content/plugins/psst"
+    }
+  }
+}

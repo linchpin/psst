@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<ruleset name="Psst">
+	<description>Linchpin coding standards with Psst project overrides.</description>
+
+	<autoload>./vendor/autoload.php</autoload>
+
+	<!-- Every PHP path CI can lint. check-branch-cs passes changed files as
+		 explicit arguments, which override these. -->
+	<file>./psst.php</file>
+	<file>./uninstall.php</file>
+	<file>./includes</file>
+	<file>./patterns</file>
+	<file>./blocks/src</file>
+	<file>./tests</file>
+	<file>./dev</file>
+
+	<exclude-pattern>./languages/index.php</exclude-pattern>
+	<exclude-pattern>./blocks/build/*</exclude-pattern>
+	<exclude-pattern>*.asset.php</exclude-pattern>
+
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+
+	<rule ref="Linchpin">
+		<!-- The main plugin file guards with WPINC and defines constants by design. -->
+		<exclude name="PSR1.Files.SideEffects"/>
+	</rule>
+
+	<!-- Test methods are named for what they assert; a docblock would repeat the name. -->
+	<rule ref="Squiz.Commenting.FunctionComment.Missing">
+		<exclude-pattern>./tests/*</exclude-pattern>
+	</rule>
+
+	<!-- The published floor. Open-ended because psst.linchpin.com runs 8.5. -->
+	<config name="testVersion" value="8.3-"/>
+
+	<config name="minimum_wp_version" value="6.9"/>
+	<rule ref="WordPress.WP.DeprecatedFunctions">
+		<properties>
+			<property name="minimum_wp_version" value="6.9"/>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="psst"/>
+				<element value="PSST"/>
+				<element value="Linchpin\Psst"/>
+				<element value="Linchpin"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="psst"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- The sniff cannot discover the post type's own capabilities. -->
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="edit_psst_secrets"/>
+				<element value="delete_psst_secrets"/>
+				<element value="delete_others_psst_secrets"/>
+				<element value="delete_published_psst_secrets"/>
+				<element value="read_private_psst_secrets"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

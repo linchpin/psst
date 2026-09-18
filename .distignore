@@ -1,0 +1,56 @@
+# What must not ship inside the release zip.
+#
+# scripts/build.sh copies from an allow-list, so this is the second layer: it
+# prunes strays from inside the directories that do ship, vendor/ most of all.
+#
+# Directory entries are anchored with a leading slash on purpose. rsync matches
+# an unanchored pattern at any depth, and an unanchored `src` once shipped a
+# sibling plugin's only runtime dependency as a lone LICENSE file.
+.git
+.gitignore
+.gitattributes
+.github
+.distignore
+.editorconfig
+.DS_Store
+.idea
+.vscode
+.claude
+.husky
+.nvmrc
+.linchpin.json
+.phplint.yml
+.php-cs-fixer.dist.php
+.php-cs-fixer.cache
+.phpunit.cache
+.stylelintrc.json
+AGENTS.md
+CLAUDE.md
+commitlint.config.js
+composer.lock
+package.json
+package-lock.json
+eslint.config.js
+webpack.config.js
+phpcs.xml.dist
+phpstan.neon
+phpunit.xml
+renovate.json
+release-please-config.json
+.release-please-manifest.json
+/src
+/dev
+/tests
+/docs
+/plans
+/playground
+/scripts
+/node_modules
+/blocks/node_modules
+/blocks/src
+/blocks/package.json
+/blocks/package-lock.json
+/blocks/webpack.config.js
+/blocks/eslint.config.js
+/blocks/.stylelintrc.json
+/CHANGELOG.md

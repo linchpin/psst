@@ -1,35 +1,111 @@
 {
   "name": "linchpin/psst",
-  "description": "Pretty Secure Secret Transmission",
-  "keywords": ["wordpress", "plugin", "linchpin"],
-  "homepage": "https://linchpin.com/plugins/psst",
-  "license": "GPL-2.0+",
-  "authors": [{
-    "name": "linchpin",
-    "email": "sayhi@linchpin.com",
-    "homepage": "https://linchpin.com"
-  }],
-  "minimum-stability": "dev",
+  "description": "Pretty Secure Secret Transmissions. Share one-time, expiring secrets that are encrypted in the browser.",
+  "homepage": "https://github.com/linchpin/psst",
+  "minimum-stability": "stable",
   "prefer-stable": true,
-  "type": "wordpress-plugin",
+  "authors": [
+    {
+      "name": "Aaron Ware",
+      "email": "aaron@linchpin.com",
+      "role": "Developer"
+    },
+    {
+      "name": "Linchpin",
+      "email": "sayhi@linchpin.com",
+      "homepage": "https://linchpin.com",
+      "role": "Developer"
+    }
+  ],
   "support": {
     "issues": "https://github.com/linchpin/psst/issues",
-    "forum": "https://wordpress.org/support/plugin/psst",
-    "wiki": "https://github.com/linchpin/psst/wiki",
-    "source": "https://github.com/linchpin/psst/"
+    "source": "https://github.com/linchpin/psst"
   },
+  "license": "GPL-2.0-or-later",
+  "type": "wordpress-plugin",
   "require": {
-    "php": ">=7.1.29",
-    "composer/installers": "^1.0",
-    "defuse/php-encryption": "^2.2"
+    "php": ">=8.3",
+    "composer/installers": "^2.0",
+    "woocommerce/action-scheduler": "^4.1"
   },
   "require-dev": {
-    "wpreadme2markdown/wpreadme2markdown": "*"
+    "linchpin/coding-standards": "^1.3.1",
+    "php-parallel-lint/php-parallel-lint": "^1.4",
+    "php-parallel-lint/php-console-highlighter": "^1.0",
+    "friendsofphp/php-cs-fixer": "^3.75",
+    "phpunit/phpunit": "^12.0",
+    "phpstan/phpstan": "^2.1",
+    "szepeviktor/phpstan-wordpress": "^2.0"
   },
-  "repositories":[
-    {
-      "type":"composer",
-      "url":"https://wpackagist.org"
+  "autoload": {
+    "psr-4": {
+      "Linchpin\\Psst\\": "includes/"
+    },
+    "files": [
+      "vendor/woocommerce/action-scheduler/action-scheduler.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Linchpin\\Psst\\Tests\\": "tests/"
     }
-  ]
+  },
+  "extra": {
+    "installer-paths": {
+      "vendor/woocommerce/action-scheduler/": [
+        "woocommerce/action-scheduler"
+      ]
+    }
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://packagist.linchpin.com"
+    }
+  ],
+  "scripts": {
+    "php-lint": "parallel-lint --exclude vendor --exclude node_modules --exclude blocks/node_modules --exclude build --exclude blocks/build .",
+    "phpcs": "phpcs --standard=phpcs.xml.dist",
+    "phpcbf": "phpcbf --standard=phpcs.xml.dist",
+    "phpstan": "phpstan analyse --memory-limit=2G",
+    "check-branch-cs": "Linchpin\\Composer\\Actions::check_branch_cs",
+    "check-staged-cs": "Linchpin\\Composer\\Actions::check_staged_cs",
+    "fixer": "php-cs-fixer -v fix --allow-risky=yes",
+    "fixer:test": "php-cs-fixer fix -v --dry-run --stop-on-violation --using-cache=no --allow-risky=yes",
+    "phpunit": "phpunit",
+    "lint": [
+      "@php-lint",
+      "@phpcs",
+      "@fixer:test",
+      "@phpstan"
+    ],
+    "test": [
+      "@lint",
+      "@phpunit"
+    ],
+    "build": "bash scripts/build.sh"
+  },
+  "scripts-descriptions": {
+    "php-lint": "Syntax lint only (parallel-lint).",
+    "phpcs": "Coding standards against phpcs.xml.dist, whole tree.",
+    "phpcbf": "Auto-fix what phpcs can.",
+    "phpstan": "Static analysis at the level in phpstan.neon.",
+    "check-branch-cs": "PHPCS over only the lines this branch changed. What linchpin/actions' php-checks.yml runs.",
+    "check-staged-cs": "The same line-scoped check against what a commit is about to introduce. What the husky pre-commit hook runs.",
+    "fixer": "php-cs-fixer, applying fixes.",
+    "fixer:test": "php-cs-fixer in dry-run mode.",
+    "phpunit": "Unit suite: no WordPress, no database.",
+    "lint": "Every static gate.",
+    "test": "Every static gate, then the unit suite.",
+    "build": "Build the distributable zip into build/psst.zip."
+  },
+  "config": {
+    "platform": {
+      "php": "8.3.0"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "composer/installers": true
+    }
+  }
 }

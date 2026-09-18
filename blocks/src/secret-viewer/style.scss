@@ -1,0 +1,86 @@
+/**
+ * Structural styles for the secret viewer.
+ */
+
+.wp-block-psst-secret-viewer {
+	--psst-gap: var(--wp--preset--spacing--40, 1.5rem);
+	--psst-gap-small: var(--wp--preset--spacing--20, 0.75rem);
+	--psst-accent: var(--wp--preset--color--primary, currentColor);
+	--psst-border: var(--wp--preset--color--border-light, rgba(0, 0, 0, 0.2));
+	--psst-radius: var(--wp--custom--border-radius, 4px);
+
+	[hidden] {
+		display: none !important;
+	}
+
+	.psst-viewer__heading:focus {
+		outline: none;
+	}
+
+	.psst-form__field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-block-end: var(--psst-gap);
+
+		label {
+			font-weight: 600;
+		}
+
+		input {
+			width: 100%;
+			box-sizing: border-box;
+			font: inherit;
+			padding: var(--psst-gap-small);
+			border: 1px solid var(--psst-border);
+			border-radius: var(--psst-radius);
+			background: var(--wp--preset--color--base, #fff);
+			color: inherit;
+		}
+	}
+
+	.psst-viewer__help {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small, 0.875rem);
+		opacity: 0.7;
+	}
+
+	.psst-viewer__error {
+		margin: 0 0 var(--psst-gap);
+		font-weight: 600;
+	}
+
+	.psst-viewer__actions {
+		display: flex;
+		margin-block: var(--psst-gap-small) var(--psst-gap);
+
+		.wp-block-button__link {
+			width: 100%;
+			cursor: pointer;
+		}
+	}
+
+	.psst-secret {
+		margin: 0 0 var(--psst-gap-small);
+		padding: var(--psst-gap);
+		border: 1px solid var(--psst-border);
+		border-radius: var(--psst-radius);
+		background: var(--wp--preset--color--base, #fff);
+		color: inherit;
+		font-family: var(--wp--preset--font-family--monospace, monospace);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+		line-height: 1.5;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		tab-size: 4;
+
+		&:focus {
+			outline: 2px solid var(--psst-accent);
+			outline-offset: 2px;
+		}
+	}
+
+	.psst-viewer__gone-help {
+		opacity: 0.8;
+	}
+}

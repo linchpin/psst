@@ -1,0 +1,24 @@
+/**
+ * Editor-only styles for the secret form preview.
+ */
+
+.wp-block-psst-secret-form.is-editor-preview {
+
+	.psst-form__faq-editor {
+		margin-block-start: 1.5rem;
+		padding: 1rem;
+		border: 1px dashed rgba(0, 0, 0, 0.3);
+		border-radius: 4px;
+	}
+
+	.psst-form__faq-label {
+		margin: 0 0 0.5rem;
+		font-size: 0.8125rem;
+		font-style: italic;
+		opacity: 0.7;
+	}
+
+	.psst-callout__heading[contenteditable] {
+		display: block;
+	}
+}

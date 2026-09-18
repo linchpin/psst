@@ -1,0 +1,183 @@
+/**
+ * Structural styles for the secret form.
+ *
+ * Preset variables only, with fallbacks, so the theme's palette and spacing
+ * apply without the plugin knowing them. Buttons carry core's button classes
+ * so the theme's button styles apply untouched.
+ */
+
+.wp-block-psst-secret-form {
+	--psst-gap: var(--wp--preset--spacing--40, 1.5rem);
+	--psst-gap-small: var(--wp--preset--spacing--20, 0.75rem);
+	--psst-accent: var(--wp--preset--color--primary, currentColor);
+	--psst-border: var(--wp--preset--color--border-light, rgba(0, 0, 0, 0.2));
+	--psst-radius: var(--wp--custom--border-radius, 4px);
+
+	[hidden] {
+		display: none !important;
+	}
+
+	.psst-form__field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-block-end: var(--psst-gap);
+
+		label {
+			font-weight: 600;
+		}
+	}
+
+	.psst-form__optional {
+		font-weight: 400;
+		opacity: 0.7;
+	}
+
+	textarea,
+	input[type="text"],
+	input[type="url"],
+	select {
+		width: 100%;
+		box-sizing: border-box;
+		font: inherit;
+		padding: var(--psst-gap-small);
+		border: 1px solid var(--psst-border);
+		border-radius: var(--psst-radius);
+		background: var(--wp--preset--color--base, #fff);
+		color: inherit;
+	}
+
+	textarea {
+		min-height: 12rem;
+		resize: vertical;
+		font-family: var(--wp--preset--font-family--monospace, monospace);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+	}
+
+	.psst-form__help {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small, 0.875rem);
+		opacity: 0.7;
+	}
+
+	.psst-form__error {
+		margin: 0 0 var(--psst-gap);
+		font-weight: 600;
+	}
+
+	.psst-form__hp {
+		position: absolute;
+		left: -10000px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.psst-form__turnstile {
+		margin-block-end: var(--psst-gap);
+	}
+
+	.psst-form__actions {
+		display: flex;
+
+		.wp-block-button__link {
+			width: 100%;
+			cursor: pointer;
+		}
+	}
+
+	.psst-form__share {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--psst-gap-small);
+		align-items: stretch;
+
+		.psst-form__url {
+			flex: 1 1 16rem;
+			font-family: var(--wp--preset--font-family--monospace, monospace);
+			font-size: var(--wp--preset--font-size--small, 0.875rem);
+		}
+
+		.wp-block-button__link {
+			cursor: pointer;
+			white-space: nowrap;
+		}
+	}
+
+	.psst-form__expires {
+		margin-block: var(--psst-gap-small) var(--psst-gap);
+	}
+
+	.psst-form__more {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: var(--psst-gap);
+		margin-block: var(--psst-gap);
+
+		h3 {
+			margin-block: 0 var(--psst-gap-small);
+			font-size: var(--wp--preset--font-size--medium, 1.125rem);
+		}
+
+		.wp-block-button__link {
+			cursor: pointer;
+		}
+	}
+
+	.psst-form__faq {
+		margin-block-start: var(--psst-gap);
+		padding-block-start: var(--psst-gap);
+		border-block-start: 1px solid var(--psst-border);
+	}
+
+	.psst-form__heading:focus {
+		outline: none;
+	}
+}
+
+// Shared callout, used by both blocks.
+.psst-callout {
+	position: relative;
+	margin-block-end: var(--psst-gap, 1.5rem);
+	padding: var(--psst-gap-small, 0.75rem) var(--psst-gap, 1.5rem);
+	padding-inline-end: 2.5rem;
+	border-inline-start: 4px solid var(--psst-accent, currentColor);
+	border-radius: var(--psst-radius, 4px);
+	background: color-mix(in srgb, var(--psst-accent, currentColor) 8%, transparent);
+
+	&[hidden] {
+		display: none !important;
+	}
+
+	&__heading {
+		display: block;
+		margin-block-end: 0.25rem;
+	}
+
+	p {
+		margin: 0;
+	}
+
+	&__dismiss {
+		position: absolute;
+		inset-block-start: 0.25rem;
+		inset-inline-end: 0.5rem;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 1.5rem;
+		line-height: 1;
+		cursor: pointer;
+		opacity: 0.6;
+
+		&:hover,
+		&:focus-visible {
+			opacity: 1;
+		}
+	}
+
+	&--warning {
+		--psst-accent: var(--wp--preset--color--warning, #b45309);
+	}
+}
