@@ -27,10 +27,9 @@ if ( Settings::turnstile_enabled() ) {
 	// Turnstile is a third-party challenge service and its widget can only be
 	// served by Cloudflare. It loads only when a site owner has opted in by
 	// entering both keys, and is disclosed in readme.txt.
-	// phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Third-party service script, opt-in and disclosed.
 	wp_enqueue_script(
 		'cf-turnstile',
-		'https://challenges.cloudflare.com/turnstile/v0/api.js',
+		'https://challenges.cloudflare.com/turnstile/v0/api.js', // phpcs:ignore PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- Third-party service script, opt-in and disclosed.
 		[],
 		null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Cloudflare's endpoint is unversioned.
 		[
