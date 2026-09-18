@@ -24,3 +24,9 @@ jobs:
             build_command: bash scripts/build.sh
             php_version: '8.3'
             exclude_directories: vendor,node_modules
+            # "Psst" is four letters and the WordPress.org slug generator wants
+            # five, so the plugin_repo category reports the name as unsupported.
+            # The name stays and the plugin is hand-submitted with a request for
+            # the `psst` slug. Ignored by code, not by check name: the rest of the
+            # header checks still run. A code, so it belongs in ignore_codes.
+            ignore_codes: plugin_header_unsupported_plugin_name
