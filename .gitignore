@@ -1,1 +1,15 @@
-vendor
+node_modules/
+blocks/node_modules/
+vendor/
+
+# Build output: `npm run build:all` and `scripts/build.sh` both write here.
+build/
+blocks/build/
+
+.phpunit.cache/
+.php-cs-fixer.cache
+phpcs-report.xml
+test-results/
+playwright-report/
+*.log
+.DS_Store

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Plain unit tests: no WordPress, no database. tests/bootstrap.php stubs the
+	handful of WordPress functions the code under test touches, so the suite runs
+	in milliseconds and needs no install.
+-->
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	colors="true"
+	cacheDirectory=".phpunit.cache"
+	failOnWarning="true"
+	failOnNotice="true"
+	failOnDeprecation="true"
+	beStrictAboutOutputDuringTests="true"
+>
+	<testsuites>
+		<testsuite name="Unit">
+			<directory suffix="Test.php">tests</directory>
+		</testsuite>
+	</testsuites>
+
+	<source>
+		<include>
+			<directory suffix=".php">includes</directory>
+		</include>
+	</source>
+</phpunit>

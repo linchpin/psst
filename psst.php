@@ -1,15 +1,22 @@
 <?php
-/*
- * Plugin Name: psst (Pretty Secure Secret Transmission)
- * Description: As simple plugin to send a relatively secure message to an individuals. Use at own risk
- * Plugin URI:  https://github.com/linchpin/psst
- * Version: 1.0.5
- * License: GPL-2.0+
- * Author URI: https://linchpin.com
- * Text Domain: psst
- * Author:      Linchpin
- * Author URI:  http://linchpin.com
- * Domain Path: \languages
+/**
+ * Plugin Name:       Psst
+ * Plugin URI:        https://github.com/linchpin/psst
+ * Description:       Pretty Secure Secret Transmissions. Share one-time, expiring secrets that are encrypted in the browser; the server only ever stores ciphertext it cannot read.
+ * x-release-please-start-version
+ * Version:           1.0.5
+ * x-release-please-end
+ * Author:            Linchpin
+ * Author URI:        https://linchpin.com
+ * Requires PHP:      8.3
+ * Requires at least: 6.9
+ * Tested up to:      7.1
+ * License:           GPLv2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       psst
+ * Domain Path:       /languages
+ *
+ * @package Linchpin\Psst
  */
 
 // If this file is called directly, abort.
@@ -17,110 +24,60 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-/**
- * Globals
+define( 'PSST_FILE', __FILE__ );
+define( 'PSST_PATH', plugin_dir_path( __FILE__ ) );
+define( 'PSST_URL', plugin_dir_url( __FILE__ ) );
+define( 'PSST_BASENAME', plugin_basename( __FILE__ ) );
+define( 'PSST_BLOCK_PATH', plugin_dir_path( __FILE__ ) . 'blocks/' );
+// x-release-please-start-version.
+define( 'PSST_VERSION', '1.0.5' );
+// x-release-please-end.
+
+/*
+ * The Composer autoloader at file scope, deliberately. Besides the plugin's own
+ * classes it loads Action Scheduler through composer.json's `autoload.files`
+ * entry, and Action Scheduler registers itself on `plugins_loaded` — so it has to
+ * be required before that hook fires, which is now.
  */
-// Define the main plugin file to make it easy to reference in subdirectories
-if ( ! defined( 'PSST_FILE' ) ) {
-	define( 'PSST_FILE', __FILE__ );
+if ( file_exists( PSST_PATH . 'vendor/autoload.php' ) ) {
+	require_once PSST_PATH . 'vendor/autoload.php';
 }
 
-if ( ! defined( 'PSST_PATH' ) ) {
-	define( 'PSST_PATH', trailingslashit( __DIR__ ) );
-}
-
-if ( ! defined( 'PSST_URL' ) ) {
-	define( 'PSST_PLUGIN_URL', trailingslashit( plugin_dir_url( __FILE__ ) ) );
-}
-
-if ( ! defined( 'PSST_PLUGIN_NAME' ) ) {
-	define( 'PSST_PLUGIN_NAME', 'Psst!' );
-}
-
-if ( ! defined( 'PSST_VERSION' ) ) {
-	define( 'PSST_VERSION', '1.0.5' );
-}
-
-/**
- * Include Libraries
- */
-require_once PSST_PATH . 'lib/cmb2/init.php';
-
-/**
- * Autoload Classes
- */
-// Include composer
-require PSST_PATH . 'vendor/autoload.php';
-
-include PSST_PATH . 'src/Core/Psr4Autoloader.php';
-$loader = new \Psst\Core\Psr4Autoloader();
-$loader->addNamespace( 'Psst', dirname( __FILE__ ) . '/src' );
-$loader->register();
-
-/***
- * Kick everything off when plugins are loaded
- */
 add_action( 'plugins_loaded', 'psst_init' );
 
 /**
- * Callback for starting the plugin.
- *
- * @wp-hook plugins_loaded
+ * Boot the plugin.
  *
  * @return void
  */
-function psst_init() {
-	do_action( 'before_psst_init' );
-
-	$psst = new \Psst\Core\Bootstrap();
-
-	try {
-		$psst->run();
-	} catch ( Exception $e ) {
-		wp_die( print_r( $e, true ) );
+function psst_init(): void {
+	if ( ! class_exists( \Linchpin\Psst\Core\Bootstrap::class ) ) {
+		add_action( 'admin_notices', 'psst_missing_autoloader_notice' );
+		return;
 	}
 
-	do_action( 'after_psst_init' );
+	do_action( 'before_psst_init' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Kept from 1.x for compatibility.
+
+	( new \Linchpin\Psst\Core\Bootstrap() )->run();
+
+	do_action( 'after_psst_init' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Kept from 1.x for compatibility.
 }
 
-register_activation_hook( __FILE__, 'psst_activation' );
-
 /**
- * Setup Crons to purge, expire and cleanup secrets upon plugin activation.
+ * Tell an administrator why Psst did not boot.
+ *
+ * @return void
  */
-function psst_activation() {
-	// Create our crons.
-	wp_schedule_event( current_time( 'timestamp' ), '5min', 'secret_expire' );
-	wp_schedule_event( current_time( 'timestamp' ), 'hourly', 'secret_purge' );
-	wp_schedule_event( current_time( 'timestamp' ), 'daily', 'secret_cleanup' );
-
-	if ( ! get_option( 'psst_flush_rewrite_rules' ) ) {
-		add_option( 'psst_flush_rewrite_rules', true );
+function psst_missing_autoloader_notice(): void {
+	if ( ! current_user_can( 'activate_plugins' ) ) {
+		return;
 	}
+
+	printf(
+		'<div class="notice notice-error"><p>%s</p></div>',
+		esc_html__( 'Psst could not load its dependencies. Run composer install inside the plugin directory, or install a release build.', 'psst' )
+	);
 }
 
-register_deactivation_hook( __FILE__, 'psst_deactivation' );
-
-/**
- * Clear hooks to clean up secrets
- * @todo this should also clear out all data from the DB if the user requests to delete all information
- *       upon uninstall.
- */
-function psst_deactivation() {
-	wp_clear_scheduled_hook( 'secret_purge' );
-	wp_clear_scheduled_hook( 'secret_expire' );
-	wp_clear_scheduled_hook( 'secret_cleanup' );
-}
-
-add_action( 'init', 'psst_flush_rewrite_rules', 20 );
-
-/**
- * Flush rewrite rules if the previously added flag exists,
- * and then remove the flag.
- */
-function psst_flush_rewrite_rules() {
-	if ( get_option( 'psst_flush_rewrite_rules' ) ) {
-		flush_rewrite_rules();
-		delete_option( 'psst_flush_rewrite_rules' );
-	}
-}
+register_activation_hook( __FILE__, [ \Linchpin\Psst\Controller\Install::class, 'activate' ] );
+register_deactivation_hook( __FILE__, [ \Linchpin\Psst\Controller\Install::class, 'deactivate' ] );

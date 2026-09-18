@@ -1,0 +1,31 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    # psst.php defines the plugin constants at runtime; PHPStan never executes
+    # it, so they are declared for analysis instead.
+    bootstrapFiles:
+        - dev/phpstan/constants.php
+    paths:
+        - psst.php
+        - uninstall.php
+        - includes
+        - patterns
+    # Block render.php files are templates WordPress includes with $attributes,
+    # $content and $block in scope; PHPCS covers them, PHPStan cannot.
+    # Action Scheduler's `as_*` functions live in vendor/.
+    scanDirectories:
+        - %currentWorkingDirectory%/vendor/woocommerce/action-scheduler
+    parallel:
+        jobSize: 10
+        maximumNumberOfProcesses: 4
+    excludePaths:
+        analyse:
+            - %currentWorkingDirectory%/vendor/*
+            - %currentWorkingDirectory%/node_modules/*
+            - %currentWorkingDirectory%/tests/*
+            - %currentWorkingDirectory%/build/*
+            - %currentWorkingDirectory%/blocks/build/*
+    fileExtensions:
+        - php

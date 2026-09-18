@@ -1,0 +1,14 @@
+/**
+ * Editor-only styles for the secret viewer preview.
+ */
+
+.wp-block-psst-secret-viewer.is-editor-preview {
+
+	.components-notice {
+		margin: 0 0 1rem;
+	}
+
+	.psst-viewer__actions .wp-block-button__link[disabled] {
+		opacity: 0.6;
+	}
+}

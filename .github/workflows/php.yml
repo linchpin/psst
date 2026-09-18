@@ -1,0 +1,66 @@
+name: PHP
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - '**.php'
+            - 'composer.json'
+            - 'composer.lock'
+            - 'phpcs.xml.dist'
+            - 'phpstan.neon'
+            - 'phpunit.xml'
+            - '.github/workflows/php.yml'
+    pull_request:
+        paths:
+            - '**.php'
+            - 'composer.json'
+            - 'composer.lock'
+            - 'phpcs.xml.dist'
+            - 'phpstan.neon'
+            - 'phpunit.xml'
+            - '.github/workflows/php.yml'
+    workflow_dispatch:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    # Parse lint, PHPUnit, PHPStan and branch-scoped PHPCS, as steps in one job.
+    # The body lives in linchpin/actions, the same workflow mantle and discovery
+    # call.
+    #
+    # release-please branches carry only version strings and a CHANGELOG, and
+    # every commit in them already passed on its own pull request.
+    php:
+        if: >-
+            !startsWith(github.head_ref || github.ref_name, 'release-please--')
+        uses: linchpin/actions/.github/workflows/php-checks.yml@v4
+        secrets: inherit
+        with:
+            # The published floor: packagist.linchpin.com consumers default to 8.3.
+            php_version: '8.3'
+            # psst.linchpin.com runs 8.5.
+            php_extra_version: '8.5'
+            run_phpstan: true
+            composer_scripts: fixer:test
+
+    # The REST arg keys WordPress actually reads. `sanitization_callback`,
+    # `validation_callback` and `permissions_callback` are silently ignored, so a
+    # typo leaves an argument unsanitized with no error anywhere.
+    rest-arg-keys:
+        name: REST arg keys
+        runs-on: ubuntu-latest
+        timeout-minutes: 2
+        steps:
+            - uses: actions/checkout@v7
+            - run: |
+                  if grep -rnE 'sanitization_callback|validation_callback|permissions_callback' includes/; then
+                    echo "::error::Use sanitize_callback, validate_callback and permission_callback."
+                    exit 1
+                  fi

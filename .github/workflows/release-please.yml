@@ -1,0 +1,235 @@
+on:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: write
+    pull-requests: write
+
+name: Release
+
+# One workflow, four jobs: open the release PR, check the plugin, build the zip,
+# publish it. This is block-alchemy's and mantle's shape.
+#
+# It previously split publishing into a second workflow, `publish-packages.yml`,
+# triggered by the `release: published` event — a pattern lifted from
+# `linchpin.com`. That is a *site* repository: its build exists to deploy a site
+# to Pressable, and its conventions are not this plugin's. Keeping the release in
+# one workflow means the publish gates on the build, the build gates on Plugin
+# Check, and there is one place to read what a release does.
+
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    release-please:
+        name: Release PR
+        if: github.event_name != 'pull_request' && github.event.pull_request.merged != true
+        runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+            tag_name: ${{ steps.release.outputs.tag_name }}
+            version: ${{ steps.release.outputs.version }}
+        steps:
+            # GH_BOT_TOKEN, not GITHUB_TOKEN. A release created with GITHUB_TOKEN
+            # raises no `release: published` event — GitHub suppresses it so a
+            # workflow cannot trigger itself. The jobs below now gate on this
+            # job's own output rather than that event, so it is no longer
+            # load-bearing for them, but it is still what the siblings use and
+            # what makes the release attributable. An organisation secret shared
+            # with this repository.
+            - uses: googleapis/release-please-action@v5
+              id: release
+              with:
+                  token: ${{ secrets.GH_BOT_TOKEN }}
+
+    # Advisory rather than blocking would be the easy call, but nothing should
+    # ship that fails it — so it gates the build.
+    plugin-check:
+        name: Plugin Check
+        needs: release-please
+        if: ${{ needs.release-please.outputs.release_created }}
+        uses: ./.github/workflows/plugin-check.yml
+        secrets: inherit
+
+    build:
+        name: Build and attach the zip
+        needs: [release-please, plugin-check]
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        if: ${{ needs.release-please.outputs.release_created }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.3'
+                  tools: composer:v2
+
+            # scripts/build.sh compiles both bundles, so the build needs node as
+            # well as PHP. Without it the script stops with "npm is not installed"
+            # rather than shipping a plugin whose blocks never register.
+            - name: Install Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: '.nvmrc'
+                  cache: 'npm'
+
+            # The same command a developer runs locally, so the artifact attached
+            # here is byte-for-byte what `bash scripts/build.sh` produces and what
+            # the publish job installs.
+            - name: Build the distributable
+              run: bash scripts/build.sh
+
+            - name: Attach the zip to the release
+              uses: svenstaro/upload-release-action@2.11.5
+              with:
+                  repo_token: ${{ secrets.GITHUB_TOKEN }}
+                  file: build/psst.zip
+                  tag: ${{ needs.release-please.outputs.tag_name }}
+                  asset_name: psst.zip
+                  overwrite: true
+
+    # packagist.linchpin.com is a SatisPress site. Publishing means installing the
+    # zip there — SatisPress reads the installed plugin's headers and serves it as
+    # a Composer package. The zip's filename becomes the plugin slug, which becomes
+    # the package name, so psst.zip is what makes linchpin/psst
+    # resolvable. Nothing here may rename it.
+    publish:
+        name: Publish to packagist.linchpin.com
+        needs: [release-please, plugin-check, build]
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        if: ${{ needs.release-please.outputs.release_created }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.3'
+                  tools: composer:v2
+
+            - name: Install Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: '.nvmrc'
+                  cache: 'npm'
+
+            - name: Build the distributable
+              run: bash scripts/build.sh
+
+            - name: Configure the SSH connection to Pressable
+              env:
+                  SSH_HOST: ${{ secrets.SSH_HOST }}
+                  SSH_USER: ${{ secrets.SSH_USER }}
+                  SSH_PASS: ${{ secrets.SSH_PASS }}
+              run: |
+                  # sshpass with an empty password fails with a bare "permission
+                  # denied", which reads like a credential problem rather than a
+                  # missing secret. Name the missing one instead.
+                  for required in SSH_HOST SSH_USER SSH_PASS; do
+                    if [ -z "${!required:-}" ]; then
+                      echo "::error::$required is not set. The release cannot be published to packagist.linchpin.com."
+                      exit 1
+                    fi
+                  done
+
+                  SSH_PATH="$HOME/.ssh"
+                  mkdir -p "$SSH_PATH/ctl"
+                  ssh-keyscan -t rsa "$SSH_HOST" >> "$SSH_PATH/known_hosts"
+
+                  chmod 700 "$SSH_PATH"
+                  chmod 644 "$SSH_PATH/known_hosts"
+
+                  cat >> "$SSH_PATH/config" <<END
+                    Host pressable
+                    HostName $SSH_HOST
+                    User $SSH_USER
+                    StrictHostKeyChecking no
+                    ControlMaster auto
+                    ControlPath $SSH_PATH/ctl/%C
+                    PasswordAuthentication yes
+                    PubkeyAuthentication no
+                  END
+              shell: bash
+
+            - name: Upload the zip
+              env:
+                  SSH_PASS: ${{ secrets.SSH_PASS }}
+              run: |
+                  sshpass -p "$SSH_PASS" rsync -e "ssh -p 22" -W --progress "build/psst.zip" "pressable:/tmp"
+
+            - name: Install the release on Linchpin Packagist
+              env:
+                  SSH_PASS: ${{ secrets.SSH_PASS }}
+              run: |
+                  sshpass -p "$SSH_PASS" ssh -p 22 pressable "cd ~/htdocs && wp plugin install /tmp/psst.zip --force"
+
+            # The install's exit code is not the signal, and this is the one part
+            # of the old publish workflow worth keeping: on the 0.2.0 release the
+            # plugin installed perfectly and stayed invisible to Composer, because
+            # SatisPress serves an explicit allowlist and this package was not on
+            # it. An install-only check went green while nothing was published.
+            #
+            # Two independent things can be wrong after a clean install — the
+            # listing and the artifact — so both are asserted. Fetching the dist
+            # URL also repairs a missing artifact, making the retry both the check
+            # and the fix.
+            - name: Verify the package is actually served
+              env:
+                  COMPOSER_AUTH: ${{ secrets.PACKAGIST_COMPOSER_AUTH_JSON }}
+                  SSH_PASS: ${{ secrets.SSH_PASS }}
+                  PACKAGE: linchpin/psst
+                  VERSION: ${{ needs.release-please.outputs.version }}
+              run: |
+                  set -euo pipefail
+
+                  ALLOWLISTED="$(sshpass -p "$SSH_PASS" ssh -p 22 pressable \
+                    "cd ~/htdocs && wp eval 'echo in_array( \"psst/psst.php\", (array) get_option( \"satispress_plugins\" ), true ) ? \"yes\" : \"no\";'" | tr -d '\r' || true)"
+
+                  if [ "$ALLOWLISTED" != "yes" ]; then
+                    echo "::error::psst/psst.php is not in the site's satispress_plugins option, so the package will not be served however cleanly it installed."
+                    {
+                      echo "### Published, but not served"
+                      echo ""
+                      echo "Add it once — never with \`wp option update\`, which would replace the"
+                      echo "hundreds of entries the rest of the estate depends on:"
+                      echo ""
+                      echo '```bash'
+                      echo 'wp eval '"'"'$o = (array) get_option( "satispress_plugins" ); $o[] = "psst/psst.php"; update_option( "satispress_plugins", array_values( array_unique( $o ) ) );'"'"
+                      echo '```'
+                      echo ""
+                      echo "Then re-run this job. Nothing needs rebuilding."
+                    } >> "$GITHUB_STEP_SUMMARY"
+                    exit 1
+                  fi
+
+                  USER="$(jq -r '."http-basic"."packagist.linchpin.com".username' <<< "$COMPOSER_AUTH")"
+                  PASS="$(jq -r '."http-basic"."packagist.linchpin.com".password' <<< "$COMPOSER_AUTH")"
+
+                  for attempt in 1 2 3; do
+                    DIST="$(curl -sf -u "$USER:$PASS" https://packagist.linchpin.com/satispress/packages.json \
+                      | jq -r --arg p "$PACKAGE" --arg v "$VERSION" '.packages[$p][$v].dist.url // empty' || true)"
+
+                    if [ -z "$DIST" ]; then
+                      echo "Attempt $attempt: $VERSION is not listed yet, retrying in 15s"
+                    elif curl -sfL -u "$USER:$PASS" -o served.zip "$DIST" && unzip -tq served.zip; then
+                      echo "::notice::$PACKAGE $VERSION is served by packagist.linchpin.com ($(stat -c%s served.zip) bytes, archive verified)"
+                      exit 0
+                    else
+                      echo "Attempt $attempt: $VERSION is listed but its artifact did not download intact, retrying in 15s"
+                    fi
+
+                    rm -f served.zip
+                    sleep 15
+                  done
+
+                  echo "::error::$PACKAGE $VERSION is not resolvable from packagist.linchpin.com."
+                  echo "::error::Listed but undownloadable means the R2 artifact could not be rebuilt — re-running this job is safe and retries it."
+                  exit 1

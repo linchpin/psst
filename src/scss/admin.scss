@@ -1,0 +1,172 @@
+/**
+ * The Psst admin app.
+ *
+ * Layout only; components come from @wordpress/components.
+ */
+
+.psst-admin {
+	margin: 0 20px 0 0;
+
+	&__shell {
+		max-width: 1100px;
+	}
+
+	&__masthead {
+		padding: 24px 0 8px;
+	}
+
+	&__title {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 0;
+		font-size: 1.6rem;
+		font-weight: 600;
+	}
+
+	&__logo {
+		display: inline-flex;
+		color: var(--wp-admin-theme-color, #3858e9);
+	}
+
+	&__version {
+		font-size: 0.75rem;
+		font-weight: 500;
+		padding: 2px 8px;
+		border-radius: 999px;
+		background: #f0f0f1;
+		color: #50575e;
+	}
+
+	&__tagline {
+		margin: 6px 0 0;
+		color: #50575e;
+		max-width: 60ch;
+	}
+
+	&__tabs {
+
+		.components-tab-panel__tabs {
+			border-bottom: 1px solid #dcdcde;
+			margin-bottom: 16px;
+		}
+	}
+
+	&__view {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	&__lead {
+		margin: 0;
+		color: #50575e;
+		max-width: 70ch;
+	}
+
+	&__section {
+
+		.components-card__header h2 {
+			margin: 0;
+			font-size: 1rem;
+		}
+
+		.components-card__header p {
+			margin: 4px 0 0;
+			color: #50575e;
+		}
+
+		.components-card__body > * + * {
+			margin-top: 16px;
+		}
+	}
+
+	&__checkbox-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 8px 16px;
+	}
+
+	&__actions {
+		padding: 8px 0 24px;
+	}
+
+	&__hint {
+		color: #50575e;
+	}
+
+	&__loading {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 24px 0;
+		color: #50575e;
+	}
+
+	&__notices {
+		position: fixed;
+		bottom: 24px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 100;
+	}
+
+	&__health {
+		margin: 0;
+		display: grid;
+		gap: 0;
+	}
+
+	&__health-row {
+		display: grid;
+		grid-template-columns: minmax(140px, 200px) 1fr;
+		gap: 16px;
+		padding: 10px 0;
+		border-bottom: 1px solid #f0f0f1;
+
+		&:last-child {
+			border-bottom: 0;
+		}
+
+		dt {
+			font-weight: 600;
+		}
+
+		dd {
+			margin: 0;
+		}
+
+		&.is-warn dd {
+			color: #996800;
+		}
+
+		&.is-ok dd::before {
+			content: "";
+			display: inline-block;
+			width: 8px;
+			height: 8px;
+			margin-right: 8px;
+			border-radius: 50%;
+			background: #00a32a;
+		}
+	}
+
+	&__expired {
+		color: #b32d2e;
+	}
+
+	&__secrets {
+
+		.dataviews-wrapper {
+			min-height: 320px;
+		}
+	}
+
+	&__footer {
+		display: flex;
+		gap: 16px;
+		padding: 16px 0 32px;
+		color: #50575e;
+		font-size: 0.8125rem;
+	}
+}

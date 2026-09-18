@@ -1,0 +1,50 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended"],
+	"lockFileMaintenance": { "enabled": true },
+	"ignoreDeps": ["husky"],
+	"labels": ["type: dependencies", "maintenance"],
+	"packageRules": [
+		{
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+			"matchManagers": ["npm"],
+			"groupName": "npm frontend",
+			"automerge": true
+		},
+		{
+			"matchUpdateTypes": ["major", "minor", "patch", "pin", "digest"],
+			"matchDepTypes": ["devDependencies"],
+			"matchManagers": ["npm"],
+			"groupName": "npm dev dependencies",
+			"automerge": true
+		},
+		{
+			"matchUpdateTypes": ["major", "minor", "patch", "pin", "digest"],
+			"matchDepTypes": ["devDependencies"],
+			"matchManagers": ["composer"],
+			"groupName": "composer dev dependencies",
+			"automerge": true
+		},
+		{
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+			"matchDepTypes": ["dependencies"],
+			"matchManagers": ["composer"],
+			"groupName": "composer",
+			"automerge": true
+		},
+		{
+			"description": "The PHP floor is declared in the plugin header, composer.json require.php and config.platform.php, and scripts/build.sh asserts the header. Never a routine bump.",
+			"matchManagers": ["composer"],
+			"matchPackageNames": ["php"],
+			"automerge": false,
+			"groupName": "php floor"
+		}
+	],
+	"rebaseWhen": "conflicted",
+	"rangeStrategy": "bump",
+	"vulnerabilityAlerts": {
+		"enabled": true,
+		"labels": ["security", "type: dependencies"]
+	},
+	"osvVulnerabilityAlerts": true
+}

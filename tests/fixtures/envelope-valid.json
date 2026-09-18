@@ -1,0 +1,22 @@
+{
+	"with_passphrase": {
+		"version": 2,
+		"ciphertext": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+		"iv": "AAECAwQFBgcICQoL",
+		"has_passphrase": true,
+		"salt": "AAECAwQFBgcICQoLDA0ODw",
+		"kdf": { "name": "PBKDF2", "hash": "SHA-256", "iterations": 600000 },
+		"check": "AAECAwQFBgcICQoLDA0ODw",
+		"ttl_minutes": 60
+	},
+	"without_passphrase": {
+		"version": 2,
+		"ciphertext": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+		"iv": "AAECAwQFBgcICQoL",
+		"has_passphrase": false,
+		"salt": null,
+		"kdf": null,
+		"check": "AAECAwQFBgcICQoLDA0ODw",
+		"ttl_minutes": 5
+	}
+}

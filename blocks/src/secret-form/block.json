@@ -1,0 +1,70 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "psst/secret-form",
+	"version": "1.0.5",
+	"title": "Secret Form",
+	"category": "widgets",
+	"icon": "lock",
+	"description": "Create a one-time, expiring secret. Encrypted in the browser before it is sent; the confirmation with the share link appears in place.",
+	"keywords": [ "psst", "secret", "password", "share" ],
+	"attributes": {
+		"defaultExpiry": {
+			"type": "integer",
+			"default": 0
+		},
+		"showPassphrase": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTip": {
+			"type": "boolean",
+			"default": true
+		},
+		"tipHeading": {
+			"type": "string",
+			"default": "Quick Tip!"
+		},
+		"tipText": {
+			"type": "string",
+			"default": "If you would like to secure your secret even further you can provide a pass phrase."
+		}
+	},
+	"supports": {
+		"html": false,
+		"interactivity": true,
+		"multiple": false,
+		"renaming": false,
+		"reusable": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"color": {
+			"background": true,
+			"text": true
+		}
+	},
+	"example": {
+		"attributes": {},
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": { "level": 3, "content": "Need some help?" }
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Shredding deletes a secret before it has been read."
+				}
+			}
+		]
+	},
+	"textdomain": "psst",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./edit.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}
