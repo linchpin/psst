@@ -99,10 +99,21 @@ class Admin_Page implements Controller_Interface {
 		wp_set_script_translations( 'psst-admin', 'psst', PSST_PATH . 'languages' );
 
 		if ( file_exists( PSST_PATH . 'build/admin.css' ) ) {
+			/*
+			 * The stylesheet reads the design system's `--wpds-*` tokens, which
+			 * core ships as the `wp-theme` style. wp-components already pulls it
+			 * in, but naming it keeps the order right if that ever changes.
+			 */
+			$style_dependencies = [ 'wp-components' ];
+
+			if ( wp_style_is( 'wp-theme', 'registered' ) ) {
+				$style_dependencies[] = 'wp-theme';
+			}
+
 			wp_enqueue_style(
 				'psst-admin',
 				PSST_URL . 'build/admin.css',
-				[ 'wp-components' ],
+				$style_dependencies,
 				$asset['version']
 			);
 		}

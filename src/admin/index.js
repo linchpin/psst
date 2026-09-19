@@ -12,13 +12,17 @@ import { createRoot } from '@wordpress/element';
 import domReady from '@wordpress/dom-ready';
 import { __ } from '@wordpress/i18n';
 import { SlotFillProvider, TabPanel } from '@wordpress/components';
+import { ThemeProvider } from '@wordpress/theme';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies
  */
 import './../scss/admin.scss';
+import { BRAND, brandStyle } from './brand';
+import TopBar from './components/topbar';
 import Masthead from './components/masthead';
+import Sidebar from './components/sidebar';
 import Footer from './components/footer';
 import Notices from './components/notices';
 import SettingsView from './views/settings';
@@ -84,15 +88,44 @@ function rememberTab( tabName ) {
 }
 
 /**
+ * The view behind a tab.
+ *
+ * @param {Object} tab The active tab.
+ * @return {Element} View.
+ */
+function renderTab( tab ) {
+	let view;
+
+	switch ( tab.name ) {
+		case 'secrets':
+			view = <SecretsView />;
+			break;
+		case 'health':
+			view = <HealthView />;
+			break;
+		default:
+			view = <SettingsView />;
+	}
+
+	return (
+		<div className="psst-admin__body">
+			<main className="psst-admin__main">{ view }</main>
+			<Sidebar />
+		</div>
+	);
+}
+
+/**
  * The app.
  *
  * @return {Element} The app.
  */
 function App() {
 	return (
-		<SlotFillProvider>
+		<div className="psst-admin__frame" style={ brandStyle() }>
+			<TopBar version={ boot.version } />
 			<div className="psst-admin__shell">
-				<Masthead version={ boot.version } />
+				<Masthead createUrl={ boot.createUrl } />
 				<Notices />
 				<TabPanel
 					className="psst-admin__tabs"
@@ -101,20 +134,11 @@ function App() {
 					tabs={ TABS }
 					onSelect={ rememberTab }
 				>
-					{ ( tab ) => {
-						switch ( tab.name ) {
-							case 'secrets':
-								return <SecretsView />;
-							case 'health':
-								return <HealthView />;
-							default:
-								return <SettingsView />;
-						}
-					} }
+					{ renderTab }
 				</TabPanel>
 				<Footer version={ boot.version } />
 			</div>
-		</SlotFillProvider>
+		</div>
 	);
 }
 
@@ -125,5 +149,25 @@ domReady( () => {
 		return;
 	}
 
-	createRoot( mount ).render( <App /> );
+	/*
+	 * Seed the design system from Psst's own brand rather than the admin
+	 * colour scheme, the way Mantle does: the top bar is already a fixed brand
+	 * gradient, so following the profile would put a stranger's accent right
+	 * beneath it. `primary` only; the default light background stays. `isRoot`
+	 * hoists the resolved tokens to the document so the snackbar notices and
+	 * any popover portalled out of this tree read the same values. Exactly one
+	 * root provider is allowed per document, so this is the only place it may
+	 * be set.
+	 */
+	createRoot( mount ).render(
+		<ThemeProvider
+			isRoot
+			color={ { primary: BRAND.primary } }
+			cornerRadius="subtle"
+		>
+			<SlotFillProvider>
+				<App />
+			</SlotFillProvider>
+		</ThemeProvider>
+	);
 } );
