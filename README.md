@@ -8,7 +8,7 @@ destroyed the moment it is viewed.
 Please see [CHANGELOG.md](CHANGELOG.md) for the latest information on the plugin.
 
 <!-- x-release-please-start-version -->
-## Latest Release: 1.0.5
+## Latest Release: 2.1.0
 <!-- x-release-please-end -->
 
 | Workflow | Status |
