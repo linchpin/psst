@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import { useEffect, useMemo, useState } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
@@ -23,6 +23,7 @@ import {
 	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
+import { plus } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -53,48 +54,225 @@ function Section( { title, description, children } ) {
 }
 
 /**
- * Choose a page by title.
+ * A page's title, or a placeholder when it has none.
+ *
+ * @param {Object} page A REST page record.
+ * @return {string} Label.
+ */
+function pageLabel( page ) {
+	const title = page?.title?.rendered || `#${ page?.id }`;
+
+	// Two pages can share a title (a second "Secret" page, say); the slug is
+	// what tells them apart, and it is also what the share links will show.
+	return page?.slug ? `${ title } (/${ page.slug }/)` : title;
+}
+
+/**
+ * Choose a page by searching for it, or make a new one that already holds
+ * the blocks this kind of page needs.
+ *
+ * The search runs on the server: a site with hundreds of pages must not be
+ * handed a truncated list to scroll through. The selected page is fetched by
+ * id so its title shows whether or not it is in the current results.
  *
  * @param {Object}   props          Props.
  * @param {string}   props.label    Label.
  * @param {string}   props.help     Help text.
+ * @param {string}   props.kind     'create' or 'reveal', for the new-page route.
  * @param {number}   props.value    Page id.
  * @param {Function} props.onChange Setter.
  * @return {Element} Control.
  */
-function PagePicker( { label, help, value, onChange } ) {
-	const pages = useSelect(
+function PagePicker( { label, help, kind, value, onChange } ) {
+	const [ search, setSearch ] = useState( '' );
+	const [ results, setResults ] = useState( [] );
+	const [ isSearching, setSearching ] = useState( false );
+	const [ isCreating, setCreating ] = useState( false );
+	const { createSuccessNotice, createErrorNotice } =
+		useDispatch( noticesStore );
+
+	const selected = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'postType', 'page', {
-				per_page: 100,
-				status: 'publish',
-				orderby: 'title',
-				order: 'asc',
-				_fields: 'id,title',
-			} ),
-		[]
+			value
+				? select( coreStore ).getEntityRecord(
+						'postType',
+						'page',
+						value,
+						{ _fields: 'id,title,slug' }
+					)
+				: null,
+		[ value ]
 	);
 
-	const options = useMemo(
-		() =>
-			( pages || [] ).map( ( page ) => ( {
-				value: String( page.id ),
-				label: page.title?.rendered || `#${ page.id }`,
-			} ) ),
-		[ pages ]
-	);
+	useEffect( () => {
+		let cancelled = false;
+		setSearching( true );
+
+		const query = new URLSearchParams( {
+			per_page: '20',
+			status: 'publish',
+			orderby: search ? 'relevance' : 'title',
+			order: 'asc',
+			_fields: 'id,title,slug',
+		} );
+
+		if ( search ) {
+			query.set( 'search', search );
+		}
+
+		const timer = setTimeout( () => {
+			apiFetch( { path: `/wp/v2/pages?${ query.toString() }` } )
+				.then( ( pages ) => {
+					if ( ! cancelled ) {
+						setResults( Array.isArray( pages ) ? pages : [] );
+					}
+				} )
+				.catch( () => {
+					if ( ! cancelled ) {
+						setResults( [] );
+					}
+				} )
+				.finally( () => {
+					if ( ! cancelled ) {
+						setSearching( false );
+					}
+				} );
+		}, 250 );
+
+		return () => {
+			cancelled = true;
+			clearTimeout( timer );
+		};
+	}, [ search ] );
+
+	const options = useMemo( () => {
+		const list = results.map( ( page ) => ( {
+			value: String( page.id ),
+			label: pageLabel( page ),
+		} ) );
+
+		if (
+			selected &&
+			! list.some( ( o ) => o.value === String( selected.id ) )
+		) {
+			list.unshift( {
+				value: String( selected.id ),
+				label: pageLabel( selected ),
+			} );
+		}
+
+		return list;
+	}, [ results, selected ] );
+
+	const createPage = async () => {
+		setCreating( true );
+
+		try {
+			const page = await apiFetch( {
+				path: '/psst/v1/settings/pages',
+				method: 'POST',
+				data: { kind },
+			} );
+
+			onChange( Number( page.id ) );
+			createSuccessNotice(
+				__(
+					'Page created and selected. Save settings to start using it.',
+					'psst'
+				),
+				{
+					type: 'snackbar',
+					actions: page.link
+						? [
+								{
+									label: __( 'View page', 'psst' ),
+									url: page.link,
+								},
+							]
+						: [],
+				}
+			);
+		} catch ( err ) {
+			createErrorNotice(
+				err?.message || __( 'The page could not be created.', 'psst' ),
+				{ type: 'snackbar' }
+			);
+		} finally {
+			setCreating( false );
+		}
+	};
 
 	return (
-		<ComboboxControl
-			__next40pxDefaultSize
-			__nextHasNoMarginBottom
-			label={ label }
-			help={ help }
-			value={ value ? String( value ) : '' }
-			options={ options }
-			onChange={ ( next ) => onChange( next ? Number( next ) : 0 ) }
-			allowReset
-		/>
+		<div className="psst-admin__page-picker">
+			<ComboboxControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				label={ label }
+				help={ help }
+				value={ value ? String( value ) : '' }
+				options={ options }
+				isLoading={ isSearching }
+				onFilterValueChange={ setSearch }
+				onChange={ ( next ) => onChange( next ? Number( next ) : 0 ) }
+				placeholder={ __( 'Search pages…', 'psst' ) }
+				allowReset
+			/>
+			<Button
+				__next40pxDefaultSize
+				variant="tertiary"
+				icon={ plus }
+				isBusy={ isCreating }
+				disabled={ isCreating }
+				onClick={ createPage }
+			>
+				{ __( 'Create a new page', 'psst' ) }
+			</Button>
+		</div>
+	);
+}
+
+/**
+ * The wp-config.php lines that lock a Turnstile key.
+ *
+ * @param {Object}  props           Props.
+ * @param {Object}  props.turnstile The turnstile part of the settings payload.
+ * @param {boolean} props.locked    Whether both keys are already constants.
+ * @return {Element} Snippet.
+ */
+function TurnstileConstants( { turnstile, locked } ) {
+	const lines = [];
+
+	if ( ! turnstile.siteKeyByConstant ) {
+		lines.push(
+			`define( '${ turnstile.siteKeyConstant }', 'your-site-key' );`
+		);
+	}
+
+	if ( ! turnstile.secretKeyByConstant ) {
+		lines.push(
+			`define( '${ turnstile.secretKeyConstant }', 'your-secret-key' );`
+		);
+	}
+
+	return (
+		<div className="psst-admin__constants">
+			<p className="psst-admin__hint">
+				{ locked
+					? __(
+							'Both keys are defined in wp-config.php, so the fields above are locked. Remove the constants to manage them here.',
+							'psst'
+						)
+					: __(
+							'Prefer to keep the keys out of the database? Define either or both in wp-config.php and the matching field locks itself:',
+							'psst'
+						) }
+			</p>
+			{ lines.length > 0 && (
+				<pre className="psst-admin__code">
+					<code>{ lines.join( '\n' ) }</code>
+				</pre>
+			) }
+		</div>
 	);
 }
 
@@ -139,6 +317,21 @@ export default function SettingsView() {
 	const catalog = data.ttlCatalog || {};
 	const set = ( key ) => ( value ) =>
 		setDraft( ( current ) => ( { ...current, [ key ]: value } ) );
+
+	const turnstile = data.turnstile || {};
+
+	let secretHelp = __( 'No secret key stored.', 'psst' );
+
+	if ( turnstile.secretKeyByConstant ) {
+		secretHelp = `${ __( 'Defined in wp-config.php by', 'psst' ) } ${
+			turnstile.secretKeyConstant
+		}`;
+	} else if ( data.hasTurnstileSecret ) {
+		secretHelp = __(
+			'A secret key is stored. Enter a new one to replace it, or clear the field and save to remove it.',
+			'psst'
+		);
+	}
 
 	const enabledTtls = draft.ttl_options || [];
 	const ttlDefaultOptions = Object.entries( catalog )
@@ -225,6 +418,7 @@ export default function SettingsView() {
 				<Flex gap={ 4 } wrap>
 					<FlexItem isBlock>
 						<PagePicker
+							kind="create"
 							label={ __( 'Create page', 'psst' ) }
 							help={ __(
 								'The page holding the Secret Form block. "Create a new secret" links go here.',
@@ -236,6 +430,7 @@ export default function SettingsView() {
 					</FlexItem>
 					<FlexItem isBlock>
 						<PagePicker
+							kind="reveal"
 							label={ __( 'Viewer page', 'psst' ) }
 							help={ __(
 								'The page holding the Secret Viewer block. Its slug becomes the link prefix, so keep it short.',
@@ -373,7 +568,7 @@ export default function SettingsView() {
 			<Section
 				title={ __( 'Turnstile', 'psst' ) }
 				description={ __(
-					'Optional Cloudflare Turnstile challenge on the create form. Needs both keys; the secret key is stored write-only and never shown again.',
+					'Optional Cloudflare Turnstile challenge on the create form. Needs both keys. The secret key is stored write-only and never shown again.',
 					'psst'
 				) }
 			>
@@ -381,39 +576,45 @@ export default function SettingsView() {
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
 					label={ __( 'Site key', 'psst' ) }
-					value={ draft.turnstile_site_key }
+					help={
+						turnstile.siteKeyByConstant
+							? `${ __( 'Defined in wp-config.php by', 'psst' ) } ${
+									turnstile.siteKeyConstant
+								}`
+							: undefined
+					}
+					value={
+						turnstile.siteKeyByConstant
+							? turnstile.siteKey
+							: draft.turnstile_site_key
+					}
 					onChange={ set( 'turnstile_site_key' ) }
+					disabled={ turnstile.siteKeyByConstant }
 					autoComplete="off"
 				/>
-				{ data.turnstileByConstant ? (
-					<Notice status="info" isDismissible={ false }>
-						{ __(
-							'The secret key is defined by PSST_TURNSTILE_SECRET_KEY in wp-config.php.',
-							'psst'
-						) }
-					</Notice>
-				) : (
-					<TextControl
-						__next40pxDefaultSize
-						__nextHasNoMarginBottom
-						type="password"
-						label={ __( 'Secret key', 'psst' ) }
-						help={
-							data.hasTurnstileSecret
-								? __(
-										'A secret key is stored. Enter a new one to replace it, or clear the field and save to remove it.',
-										'psst'
-									)
-								: __( 'No secret key stored.', 'psst' )
-						}
-						placeholder={
-							data.hasTurnstileSecret ? '••••••••' : ''
-						}
-						value={ turnstileSecret ?? '' }
-						onChange={ setTurnstileSecret }
-						autoComplete="new-password"
-					/>
-				) }
+				<TextControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					type="password"
+					label={ __( 'Secret key', 'psst' ) }
+					help={ secretHelp }
+					placeholder={
+						turnstile.secretKeyByConstant || data.hasTurnstileSecret
+							? '••••••••••••'
+							: ''
+					}
+					value={ turnstileSecret ?? '' }
+					onChange={ setTurnstileSecret }
+					disabled={ turnstile.secretKeyByConstant }
+					autoComplete="new-password"
+				/>
+				<TurnstileConstants
+					turnstile={ turnstile }
+					locked={
+						turnstile.siteKeyByConstant &&
+						turnstile.secretKeyByConstant
+					}
+				/>
 				<ExternalLink href="https://developers.cloudflare.com/turnstile/">
 					{ __( 'About Turnstile', 'psst' ) }
 				</ExternalLink>
@@ -458,13 +659,6 @@ export default function SettingsView() {
 				>
 					{ __( 'Reset to defaults', 'psst' ) }
 				</Button>
-				<span className="psst-admin__hint">
-					{ sprintf(
-						/* translators: %d: number of enabled expiration choices. */
-						__( '%d expiration choices enabled.', 'psst' ),
-						enabledTtls.length
-					) }
-				</span>
 			</Flex>
 		</div>
 	);

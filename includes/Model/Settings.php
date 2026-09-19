@@ -331,13 +331,46 @@ final class Settings {
 	}
 
 	/**
+	 * The wp-config.php constants that override the two Turnstile keys.
+	 *
+	 * Either may be set on its own. A constant beats the stored value, and the
+	 * admin screen locks the matching field while it is defined.
+	 */
+	public const CONSTANT_TURNSTILE_SITE_KEY   = 'PSST_TURNSTILE_SITE_KEY';
+	public const CONSTANT_TURNSTILE_SECRET_KEY = 'PSST_TURNSTILE_SECRET_KEY';
+
+	/**
+	 * Whether a Turnstile key is defined by its constant.
+	 *
+	 * @param string $constant One of the CONSTANT_TURNSTILE_* names.
+	 *
+	 * @return bool
+	 */
+	public static function turnstile_constant_defined( string $constant ): bool {
+		return defined( $constant ) && is_string( constant( $constant ) );
+	}
+
+	/**
+	 * The Turnstile site key: the constant wins, then the stored setting.
+	 *
+	 * @return string
+	 */
+	public static function turnstile_site_key(): string {
+		if ( self::turnstile_constant_defined( self::CONSTANT_TURNSTILE_SITE_KEY ) ) {
+			return (string) constant( self::CONSTANT_TURNSTILE_SITE_KEY );
+		}
+
+		return (string) self::get( 'turnstile_site_key' );
+	}
+
+	/**
 	 * The Turnstile secret key: the constant wins, then the write-only option.
 	 *
 	 * @return string
 	 */
 	public static function turnstile_secret(): string {
-		if ( defined( 'PSST_TURNSTILE_SECRET_KEY' ) && is_string( PSST_TURNSTILE_SECRET_KEY ) ) {
-			return PSST_TURNSTILE_SECRET_KEY;
+		if ( self::turnstile_constant_defined( self::CONSTANT_TURNSTILE_SECRET_KEY ) ) {
+			return (string) constant( self::CONSTANT_TURNSTILE_SECRET_KEY );
 		}
 
 		return (string) get_option( self::OPTION_TURNSTILE_SECRET, '' );
@@ -349,7 +382,7 @@ final class Settings {
 	 * @return bool
 	 */
 	public static function turnstile_enabled(): bool {
-		return '' !== (string) self::get( 'turnstile_site_key' ) && '' !== self::turnstile_secret();
+		return '' !== self::turnstile_site_key() && '' !== self::turnstile_secret();
 	}
 
 	/**
@@ -366,7 +399,7 @@ final class Settings {
 			'ttlDefault'       => self::ttl_default(),
 			'maxPlaintext'     => self::max_plaintext_bytes(),
 			'kdfIterations'    => Envelope::MIN_KDF_ITERATIONS,
-			'turnstileSiteKey' => self::turnstile_enabled() ? (string) self::get( 'turnstile_site_key' ) : '',
+			'turnstileSiteKey' => self::turnstile_enabled() ? self::turnstile_site_key() : '',
 			'locale'           => str_replace( '_', '-', get_locale() ),
 		];
 

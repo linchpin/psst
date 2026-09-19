@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Linchpin\Psst\Controller\Install;
 use Linchpin\Psst\Core\Scheduler;
 use Linchpin\Psst\Model\Secret_Repository;
 use Linchpin\Psst\Model\Settings as Settings_Model;
@@ -74,6 +75,25 @@ class Settings extends REST_Base {
 				'callback'            => [ $this, 'reset_settings' ],
 				'permission_callback' => [ $this, 'get_admin_permissions' ],
 				'show_in_index'       => false,
+			]
+		);
+
+		register_rest_route(
+			$this->get_api_namespace(),
+			'/settings/pages',
+			[
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'create_page' ],
+				'permission_callback' => [ $this, 'get_page_permissions' ],
+				'show_in_index'       => false,
+				'args'                => [
+					'kind' => [
+						'required'          => true,
+						'type'              => 'string',
+						'enum'              => [ Install::PAGE_CREATE, Install::PAGE_REVEAL ],
+						'sanitize_callback' => 'sanitize_key',
+					],
+				],
 			]
 		);
 
@@ -161,6 +181,59 @@ class Settings extends REST_Base {
 	}
 
 	/**
+	 * Creating a page needs the page capability on top of the admin one.
+	 *
+	 * @param \WP_REST_Request $request The request.
+	 *
+	 * @return bool|\WP_Error
+	 */
+	public function get_page_permissions( \WP_REST_Request $request ): bool|\WP_Error {
+		$admin = $this->get_admin_permissions( $request );
+
+		if ( true !== $admin ) {
+			return $admin;
+		}
+
+		if ( current_user_can( 'publish_pages' ) ) {
+			return true;
+		}
+
+		return new \WP_Error(
+			'psst_forbidden',
+			__( 'You are not allowed to publish pages.', 'psst' ),
+			[ 'status' => rest_authorization_required_code() ]
+		);
+	}
+
+	/**
+	 * POST /settings/pages
+	 *
+	 * A fresh published page holding the blocks the kind needs. The setting is
+	 * not changed here: the screen puts the new page into its unsaved draft so
+	 * one Save covers everything.
+	 *
+	 * @param \WP_REST_Request $request The request.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function create_page( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$page_id = Install::create_page( (string) $request['kind'], false );
+
+		if ( $page_id <= 0 ) {
+			return new \WP_Error( 'psst_page_not_created', __( 'The page could not be created.', 'psst' ), [ 'status' => 500 ] );
+		}
+
+		return new \WP_REST_Response(
+			[
+				'id'    => $page_id,
+				'title' => get_the_title( $page_id ),
+				'link'  => get_permalink( $page_id ),
+			],
+			201
+		);
+	}
+
+	/**
 	 * POST /settings/reset
 	 *
 	 * @return \WP_REST_Response
@@ -234,7 +307,14 @@ class Settings extends REST_Base {
 			'schema'              => Settings_Model::schema(),
 			'ttlCatalog'          => Ttl::catalog(),
 			'hasTurnstileSecret'  => '' !== Settings_Model::turnstile_secret(),
-			'turnstileByConstant' => defined( 'PSST_TURNSTILE_SECRET_KEY' ),
+			'turnstile'           => [
+				'siteKeyConstant'     => Settings_Model::CONSTANT_TURNSTILE_SITE_KEY,
+				'secretKeyConstant'   => Settings_Model::CONSTANT_TURNSTILE_SECRET_KEY,
+				'siteKeyByConstant'   => Settings_Model::turnstile_constant_defined( Settings_Model::CONSTANT_TURNSTILE_SITE_KEY ),
+				'secretKeyByConstant' => Settings_Model::turnstile_constant_defined( Settings_Model::CONSTANT_TURNSTILE_SECRET_KEY ),
+				// The site key is public by design; the secret is never sent.
+				'siteKey'             => Settings_Model::turnstile_site_key(),
+			],
 		];
 	}
 }

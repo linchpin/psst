@@ -1,6 +1,6 @@
 {
   "name": "@linchpin/psst",
-  "version": "1.0.5",
+  "version": "2.0.0",
   "description": "Pretty Secure Secret Transmissions. Share one-time, expiring secrets that are encrypted in the browser.",
   "author": "Linchpin <sayhi@linchpin.com>",
   "license": "GPL-2.0-or-later",
@@ -44,6 +44,7 @@
     "@wordpress/icons": "^16.0.0",
     "@wordpress/notices": "^5.55.0",
     "@wordpress/scripts": "^35.0.0",
+    "@wordpress/theme": "^2.1.0",
     "@wp-playground/cli": "^3.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
