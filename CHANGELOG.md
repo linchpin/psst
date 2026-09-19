@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.1.0](https://github.com/linchpin/psst/compare/v2.0.0...v2.1.0) (2026-09-19)
+
+
+### Features ✨
+
+* **NO-TASK:** Add branded admin chrome themed through the design system ([a7496a7](https://github.com/linchpin/psst/commit/a7496a78bb5bc61146818ecae3df1f7ca992acaf))
+* **NO-TASK:** Add Turnstile wp-config constants and searchable page pickers ([719c5bf](https://github.com/linchpin/psst/commit/719c5bf601afa69f17afd373e8a20088df6d8d98))
+* **NO-TASK:** Brand the admin screen, add Turnstile constants and page creation ([6d2844e](https://github.com/linchpin/psst/commit/6d2844e2298e65d7b6eb876a9aea4cf489b003e5))
+
+
+### Miscellaneous Chores 🧹
+
+* **NO-TASK:** Update docs ([5009916](https://github.com/linchpin/psst/commit/5009916ad929ba204af4e83a9c63d4f89acc4e67))
+* **NO-TASK:** Update docs ([4dc40cc](https://github.com/linchpin/psst/commit/4dc40cc40280e38fd785b0f197fb0139f8ed3c08))
+
 ## [2.0.0](https://github.com/linchpin/psst/compare/v1.0.5...v2.0.0) (2026-09-18)
 
 

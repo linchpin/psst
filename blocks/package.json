@@ -1,6 +1,6 @@
 {
   "name": "@linchpin/psst-blocks",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Gutenberg blocks for Psst: the secret form and the secret viewer.",
   "author": "Linchpin <sayhi@linchpin.com>",
   "license": "GPL-2.0-or-later",
