@@ -1,5 +1,5 @@
 {
-  "agent": "claude",
+  "agent": "custom",
   "agentBasePath": "~/GitHub",
   "wordpress": {
     "pluginSlug": "psst",
