@@ -73,8 +73,9 @@ Namespace `psst/v1`. Every response is `Cache-Control: no-store` and `X-Robots-T
 
 Pages, enabled expiration choices and the default, the plaintext size cap, rate limits,
 an optional Cloudflare Turnstile challenge, the trusted proxy header, and whether to
-delete everything on uninstall. The Turnstile secret is stored write-only and can also be
-set with the `PSST_TURNSTILE_SECRET_KEY` constant.
+delete everything on uninstall. The Turnstile secret is stored write-only. Either Turnstile
+key can instead be defined in `wp-config.php` with `PSST_TURNSTILE_SITE_KEY` and
+`PSST_TURNSTILE_SECRET_KEY`; a defined constant wins and locks its field on the screen.
 
 ## Hooks
 

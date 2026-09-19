@@ -104,7 +104,7 @@ $psst_wrapper = get_block_wrapper_attributes(
 		</div>
 
 		<?php if ( Settings::turnstile_enabled() ) : ?>
-			<div class="cf-turnstile psst-form__turnstile" data-sitekey="<?php echo esc_attr( (string) Settings::get( 'turnstile_site_key' ) ); ?>" data-size="flexible"></div>
+			<div class="cf-turnstile psst-form__turnstile" data-sitekey="<?php echo esc_attr( Settings::turnstile_site_key() ); ?>" data-size="flexible"></div>
 		<?php endif; ?>
 
 		<div class="psst-form__hp" aria-hidden="true">

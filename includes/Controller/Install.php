@@ -110,6 +110,12 @@ class Install implements Controller_Interface {
 	}
 
 	/**
+	 * The two kinds of page the plugin needs, keyed the way the settings are.
+	 */
+	public const PAGE_CREATE = 'create';
+	public const PAGE_REVEAL = 'reveal';
+
+	/**
 	 * Create the two pages the routes need, if they are missing.
 	 *
 	 * @return void
@@ -119,26 +125,66 @@ class Install implements Controller_Interface {
 		$changed  = false;
 
 		if ( ! self::page_exists( (int) $settings['reveal_page_id'] ) ) {
-			$settings['reveal_page_id'] = self::create_page(
-				_x( 'Secret', 'reveal page title', 'psst' ),
-				's',
-				'<!-- wp:psst/secret-viewer /-->'
-			);
+			$settings['reveal_page_id'] = self::create_page( self::PAGE_REVEAL );
 			$changed                    = true;
 		}
 
 		if ( ! self::page_exists( (int) $settings['create_page_id'] ) ) {
-			$settings['create_page_id'] = self::create_page(
-				_x( 'Share a Secret', 'create page title', 'psst' ),
-				'share',
-				'<!-- wp:pattern {"slug":"psst/create-page"} /-->'
-			);
+			$settings['create_page_id'] = self::create_page( self::PAGE_CREATE );
 			$changed                    = true;
 		}
 
 		if ( $changed ) {
 			Settings::save( $settings );
 		}
+	}
+
+	/**
+	 * What a page of each kind is made of.
+	 *
+	 * @param string $kind PAGE_CREATE or PAGE_REVEAL.
+	 *
+	 * @return array{title: string, slug: string, content: string}|null Null for an unknown kind.
+	 */
+	public static function page_blueprint( string $kind ): ?array {
+		switch ( $kind ) {
+			case self::PAGE_REVEAL:
+				return [
+					'title'   => _x( 'Secret', 'reveal page title', 'psst' ),
+					'slug'    => 's',
+					'content' => '<!-- wp:psst/secret-viewer /-->',
+				];
+
+			case self::PAGE_CREATE:
+				return [
+					'title'   => _x( 'Share a Secret', 'create page title', 'psst' ),
+					'slug'    => 'share',
+					'content' => '<!-- wp:pattern {"slug":"psst/create-page"} /-->',
+				];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Insert a page of the given kind with the blocks it needs already in it.
+	 *
+	 * @param string $kind  PAGE_CREATE or PAGE_REVEAL.
+	 * @param bool   $reuse Return a published page that already has the slug
+	 *                      instead of adding another. Activation reuses; the
+	 *                      admin screen's "create a page" button does not, and
+	 *                      WordPress gives the new page a unique slug.
+	 *
+	 * @return int The page id, or 0.
+	 */
+	public static function create_page( string $kind, bool $reuse = true ): int {
+		$blueprint = self::page_blueprint( $kind );
+
+		if ( null === $blueprint ) {
+			return 0;
+		}
+
+		return self::insert_page( $blueprint['title'], $blueprint['slug'], $blueprint['content'], $reuse );
 	}
 
 	/**
@@ -153,16 +199,17 @@ class Install implements Controller_Interface {
 	}
 
 	/**
-	 * Insert a page, reusing one that already has the slug.
+	 * Insert a page, optionally reusing one that already has the slug.
 	 *
 	 * @param string $title   Title.
 	 * @param string $slug    Slug.
 	 * @param string $content Block markup.
+	 * @param bool   $reuse   Whether a published page with the slug counts.
 	 *
 	 * @return int The page id, or 0.
 	 */
-	private static function create_page( string $title, string $slug, string $content ): int {
-		$existing = get_page_by_path( $slug, OBJECT, 'page' );
+	private static function insert_page( string $title, string $slug, string $content, bool $reuse ): int {
+		$existing = $reuse ? get_page_by_path( $slug, OBJECT, 'page' ) : null;
 
 		if ( $existing instanceof \WP_Post && 'publish' === $existing->post_status ) {
 			return (int) $existing->ID;
