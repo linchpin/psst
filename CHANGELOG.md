@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0](https://github.com/linchpin/psst/compare/v2.1.0...v2.2.0) (2026-09-20)
+
+
+### Features ✨
+
+* **LINCHPIN-5638:** Add a Pages tab and fix two faults found testing locally ([f921f98](https://github.com/linchpin/psst/commit/f921f9813ed1905b4b7dad352693ee354a5f1fbe))
+* **LINCHPIN-5638:** Add front end accounts, sent-secret history and email delivery ([f50c239](https://github.com/linchpin/psst/commit/f50c2395808e45f8e0479efc8035d7b5225547ba))
+* **LINCHPIN-5638:** Add front end accounts, sent-secret history and email delivery ([a20efca](https://github.com/linchpin/psst/commit/a20efca602c45d1179b733fd6a4b97705418b526))
+
+
+### Bug Fixes 🐛
+
+* **LINCHPIN-5638:** Ship the DataViews stylesheet so the secrets table renders ([26ecd92](https://github.com/linchpin/psst/commit/26ecd92db865cd09fbce8dfea85472b128bba299))
+
 ## [2.1.0](https://github.com/linchpin/psst/compare/v2.0.0...v2.1.0) (2026-09-19)
 
 
