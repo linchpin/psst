@@ -45,6 +45,11 @@ it, and neither can anyone with the database, because there is no key on the ser
 it with. Every claim above is asserted by the checked-in unit and end-to-end suites. The full
 walkthrough is in [How the encryption works](docs/psst/guides/encryption.md).
 
+One opt-in feature trades this away, and only for the secrets it is used on. Emailing a share
+link means giving the server the key, because the server is what sends the mail — and the key
+then sits in the recipient's mailbox. It is off by default and the sender is shown the
+tradeoff before choosing it. See [Accounts](docs/psst/guides/accounts.md#emailing-a-link).
+
 ## Key Features
 
 | Feature | Details |
@@ -55,11 +60,12 @@ walkthrough is in [How the encryption works](docs/psst/guides/encryption.md).
 | Local pass-phrase retry | Wrong pass phrases are detected in the browser against a check value with no second request |
 | Expiry | Eleven choices from five minutes to one week, enforced by Action Scheduler and again at read time |
 | Shred | Sender's one-time management token or an administrator can destroy a secret before it is read |
-| Gutenberg blocks | `psst/secret-form` and `psst/secret-viewer`, Interactivity API, styled from theme presets and core button classes |
+| Gutenberg blocks | `psst/secret-form` and `psst/secret-viewer`, plus `psst/login-form`, `psst/register-form` and `psst/account` for the optional account layer |
 | Hardening | `no-store`, `noindex`, `no-referrer`, `nosniff`, `X-Frame-Options`, `DONOTCACHEPAGE`, opt-in CSP on secret pages |
 | Abuse controls | Per-IP and global rate limits, honeypot, optional Cloudflare Turnstile that fails closed |
+| Optional accounts | Front end sign in, registration and an account area; a signed-in sender's record of what they sent (metadata only), an optional wp-admin lockout, and optional email delivery. All off by default |
 | Admin screen | Settings, a metadata-only list of live secrets with shred, and a health check; under Settings or Mantle |
-| Extensibility | Ten actions and nineteen filters, none of which ever receives a key, pass phrase, or plaintext |
+| Extensibility | Sixteen actions and thirty-six filters. Only `psst_share_email_body`, part of the opt-in email feature, ever sees a key; nothing else receives a key, pass phrase, or plaintext |
 
 ## Requirements
 
@@ -144,7 +150,7 @@ docs site by the `sync-docs` workflow.
 | Section | Contents |
 |---------|----------|
 | [Getting started](docs/psst/getting-started/index.md) | Requirements, installation, configuration, your first secret |
-| [Guides](docs/psst/guides/index.md) | How the encryption works, hardening, upgrading from 1.x |
+| [Guides](docs/psst/guides/index.md) | How the encryption works, accounts, hardening, upgrading from 1.x |
 | [Reference](docs/psst/reference/index.md) | REST API, hooks, blocks and patterns, development |
 | [Troubleshooting](docs/psst/troubleshooting.md) | Symptom-to-check reference |
 

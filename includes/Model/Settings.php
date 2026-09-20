@@ -60,6 +60,23 @@ final class Settings {
 			'delete_on_uninstall'               => true,
 			'create_page_id'                    => 0,
 			'reveal_page_id'                    => 0,
+
+			/*
+			 * The account layer. Every one of these is off, because the plugin
+			 * ships to wordpress.org and an install that upgrades into a front
+			 * end login, a locked wp-admin or a new data store it never asked
+			 * for is an install that has been broken by an update.
+			 */
+			'accounts_enabled'                  => false,
+			'allow_registration'                => false,
+			'require_login_to_create'           => false,
+			'block_admin_access'                => false,
+			'history_enabled'                   => false,
+			'history_retention_days'            => 30,
+			'email_delivery_enabled'            => false,
+			'login_page_id'                     => 0,
+			'register_page_id'                  => 0,
+			'account_page_id'                   => 0,
 		];
 	}
 
@@ -100,6 +117,20 @@ final class Settings {
 			'delete_on_uninstall'               => [ 'type' => 'boolean' ],
 			'create_page_id'                    => [ 'type' => 'integer' ],
 			'reveal_page_id'                    => [ 'type' => 'integer' ],
+			'accounts_enabled'                  => [ 'type' => 'boolean' ],
+			'allow_registration'                => [ 'type' => 'boolean' ],
+			'require_login_to_create'           => [ 'type' => 'boolean' ],
+			'block_admin_access'                => [ 'type' => 'boolean' ],
+			'history_enabled'                   => [ 'type' => 'boolean' ],
+			'history_retention_days'            => [
+				'type'    => 'integer',
+				'minimum' => 1,
+				'maximum' => 3650,
+			],
+			'email_delivery_enabled'            => [ 'type' => 'boolean' ],
+			'login_page_id'                     => [ 'type' => 'integer' ],
+			'register_page_id'                  => [ 'type' => 'integer' ],
+			'account_page_id'                   => [ 'type' => 'integer' ],
 		];
 	}
 
@@ -331,6 +362,133 @@ final class Settings {
 	}
 
 	/**
+	 * The master switch for everything account-related.
+	 *
+	 * Login, registration, the account area, the wp-admin lockout, the sent
+	 * history and email delivery all check this first, so one setting turns the
+	 * whole layer off and the plugin behaves exactly as it did before it existed.
+	 *
+	 * @return bool
+	 */
+	public static function accounts_enabled(): bool {
+		/**
+		 * Filters whether the front end account layer is active.
+		 *
+		 * @param bool $enabled The stored setting.
+		 */
+		return (bool) apply_filters( 'psst_accounts_enabled', (bool) self::get( 'accounts_enabled' ) );
+	}
+
+	/**
+	 * Whether a visitor may create an account from the front end.
+	 *
+	 * WordPress's own switch still wins: a site (or, on multisite, a network)
+	 * that has closed registration stays closed no matter what Psst is set to.
+	 *
+	 * @return bool
+	 */
+	public static function registration_open(): bool {
+		if ( ! self::accounts_enabled() || ! (bool) self::get( 'allow_registration' ) ) {
+			return false;
+		}
+
+		$core_allows = is_multisite()
+			? in_array( (string) get_site_option( 'registration', 'none' ), [ 'user', 'all' ], true )
+			: (bool) get_option( 'users_can_register' );
+
+		/**
+		 * Filters whether front end registration is offered.
+		 *
+		 * @param bool $open        Psst's setting and WordPress's, both satisfied.
+		 * @param bool $core_allows What WordPress alone says.
+		 */
+		return (bool) apply_filters( 'psst_registration_open', $core_allows, $core_allows );
+	}
+
+	/**
+	 * Whether creating a secret requires a logged-in user.
+	 *
+	 * @return bool
+	 */
+	public static function require_login_to_create(): bool {
+		return self::accounts_enabled() && (bool) self::get( 'require_login_to_create' );
+	}
+
+	/**
+	 * Whether sent-secret metadata is recorded for logged-in senders.
+	 *
+	 * @return bool
+	 */
+	public static function history_enabled(): bool {
+		return self::accounts_enabled() && (bool) self::get( 'history_enabled' );
+	}
+
+	/**
+	 * How long a history row is kept, in seconds.
+	 *
+	 * @return int
+	 */
+	public static function history_retention(): int {
+		return max( 1, (int) self::get( 'history_retention_days' ) ) * DAY_IN_SECONDS;
+	}
+
+	/**
+	 * Whether Psst may email a share link to a recipient.
+	 *
+	 * @return bool
+	 */
+	public static function email_delivery_enabled(): bool {
+		return self::accounts_enabled() && (bool) self::get( 'email_delivery_enabled' );
+	}
+
+	/**
+	 * The permalink of one of the account pages, or the empty string.
+	 *
+	 * @param string $key One of login_page_id, register_page_id, account_page_id.
+	 *
+	 * @return string
+	 */
+	public static function page_url( string $key ): string {
+		$page_id = (int) self::get( $key );
+
+		if ( $page_id <= 0 || 'publish' !== get_post_status( $page_id ) ) {
+			return '';
+		}
+
+		$url = get_permalink( $page_id );
+
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * The front end login page, when one is configured and accounts are on.
+	 *
+	 * @return string Empty when the front end login is not in play, which every
+	 *                caller reads as "leave core's wp-login.php alone".
+	 */
+	public static function get_login_url(): string {
+		return self::accounts_enabled() ? self::page_url( 'login_page_id' ) : '';
+	}
+
+	/**
+	 * The front end registration page.
+	 *
+	 * @return string
+	 */
+	public static function get_register_url(): string {
+		return self::registration_open() ? self::page_url( 'register_page_id' ) : '';
+	}
+
+	/**
+	 * The front end account page.
+	 *
+	 * @return string
+	 */
+	public static function get_account_url(): string {
+		return self::accounts_enabled() ? self::page_url( 'account_page_id' ) : '';
+	}
+
+	/**
 	 * The wp-config.php constants that override the two Turnstile keys.
 	 *
 	 * Either may be set on its own. A constant beats the stored value, and the
@@ -401,6 +559,15 @@ final class Settings {
 			'kdfIterations'    => Envelope::MIN_KDF_ITERATIONS,
 			'turnstileSiteKey' => self::turnstile_enabled() ? self::turnstile_site_key() : '',
 			'locale'           => str_replace( '_', '-', get_locale() ),
+
+			/*
+			 * Site-level only. The /config route is cached publicly for five
+			 * minutes, so nothing that varies per user belongs in here — the
+			 * blocks read the visitor's own state from their render context.
+			 */
+			'loginUrl'         => self::get_login_url(),
+			'accountUrl'       => self::get_account_url(),
+			'emailDelivery'    => self::email_delivery_enabled(),
 		];
 
 		/**

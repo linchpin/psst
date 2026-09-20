@@ -1,0 +1,23 @@
+/**
+ * Editor-only styles for the login-form preview.
+ *
+ * The preview draws the shape of the form with inert markup — the real fields
+ * are rendered on the server, and a working-looking form in the editor would
+ * only invite someone to type into it.
+ */
+
+.wp-block-psst-login-form.is-editor-preview {
+
+	.psst-account__label {
+		display: block;
+		font-weight: 600;
+	}
+
+	.psst-account__input {
+		display: block;
+		height: 2.5rem;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		border-radius: 4px;
+		background: rgba(0, 0, 0, 0.04);
+	}
+}

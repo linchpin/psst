@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "psst/register-form",
+	"version": "1.0.0",
+	"title": "Create Account Form",
+	"category": "widgets",
+	"icon": "admin-users",
+	"description": "Let a visitor create an account from the front end, so they can keep a record of the secrets they send.",
+	"keywords": [ "psst", "register", "sign up", "account" ],
+	"attributes": {
+		"heading": {
+			"type": "string",
+			"default": "Create an account"
+		},
+		"intro": {
+			"type": "string",
+			"default": "An account keeps a record of the secrets you send — who they were for, when they expire and whether they have been read. It never stores the secrets themselves."
+		},
+		"showLoginLink": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"renaming": false,
+		"reusable": false,
+		"align": [ "wide" ],
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true }
+	},
+	"textdomain": "psst",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./edit.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

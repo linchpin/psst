@@ -1,0 +1,10 @@
+/**
+ * Editor-only styles for the account preview.
+ */
+
+@use "../shared/account" as account;
+
+.wp-block-psst-account.is-editor-preview {
+
+	@include account.psst-history-styles;
+}

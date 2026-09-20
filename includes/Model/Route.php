@@ -63,4 +63,31 @@ final class Route {
 
 		return ( $create > 0 && is_page( $create ) ) || ( $reveal > 0 && is_page( $reveal ) );
 	}
+
+	/**
+	 * Whether the current request renders one of the account pages.
+	 *
+	 * These need the same no-store treatment as a secret page, for two reasons.
+	 * The account page lists what somebody has sent and belongs to them alone,
+	 * and the registration form carries a nonce — a cached registration page
+	 * hands every visitor the same stale nonce and registration simply stops
+	 * working, in a way that looks like the form is broken rather than cached.
+	 *
+	 * @return bool
+	 */
+	public static function is_account_page(): bool {
+		if ( ! Settings::accounts_enabled() ) {
+			return false;
+		}
+
+		foreach ( [ 'login_page_id', 'register_page_id', 'account_page_id' ] as $key ) {
+			$page_id = (int) Settings::get( $key );
+
+			if ( $page_id > 0 && is_page( $page_id ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 }

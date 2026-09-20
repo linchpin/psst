@@ -51,14 +51,29 @@ The gone panel is the same markup regardless of why, and in that case the inters
 
 **Client-side statuses.** `ready`, `protected`, `revealing`, `wrong-passphrase`, `revealed`, `error`, `gone`, and `unsupported`. The reveal action is described in [How the encryption works](../guides/encryption.md). After a successful reveal the plaintext is placed in a focused `<pre class="psst-secret" tabindex="-1">` with a **Copy secret** button and a dismissible warning. The fragment is removed from the URL with `history.replaceState`.
 
+## The account blocks
+
+These three ship with the optional account layer and render nothing useful until it is enabled. All are server-rendered with no view script: they are plain form posts, so they work with JavaScript unavailable. See [Accounts](../guides/accounts.md).
+
+| Block | Attributes | What it renders |
+| --- | --- | --- |
+| `psst/login-form` | `heading`, `showRegisterLink`, `showLostPassword` | The sign-in form, built with `wp_login_form()` so that fields added by other plugins survive, and the lost-password form when the page is reached with `?action=lostpassword`. Hidden from a signed-in visitor. |
+| `psst/register-form` | `heading`, `intro`, `showLoginLink` | The registration form, or a "not accepting new accounts" notice when registration is closed in either Psst or WordPress. Carries a honeypot and fires `psst_register_form` before the submit button. |
+| `psst/account` | `heading`, `perPage`, `showSignOut` | A signed-in sender's record of the secrets they have sent, paginated. Prompts a signed-out visitor to sign in. |
+
+The form posts to `wp-login.php`, which is the only thing that checks a password. Registration posts back to its own page and is handled on `template_redirect`, deliberately avoiding `admin-post.php` — a site that has just locked wp-admin down should not route account creation through it.
+
 ## Patterns
 
-Both patterns are registered in the `psst` pattern category.
+All five patterns are registered in the `psst` pattern category.
 
 | Slug | Title | Contents |
 | --- | --- | --- |
 | `psst/create-page` | Share a secret | A constrained `core/group` as `<main>`, an `h1`, an intro paragraph, and the form with four starter FAQ inner blocks. Activation places this on the **Share a Secret** page. |
 | `psst/cross-sell` | Create your own secret | A `core/group` with an `h3`, a paragraph, and a `core/button` whose URL is bound to the create page. |
+| `psst/sign-in-page` | Sign in | A heading, a line explaining that an account is optional, and the sign-in form. Placed on the **Sign In** page when the account layer is first enabled. |
+| `psst/register-page` | Create an account | A heading and the registration form. Placed on the **Create an Account** page. |
+| `psst/account-page` | Your account | A heading and the account block. Placed on the **Your Account** page. |
 
 The cross-sell button uses a block binding source, `psst/create-url`, whose value is the create page permalink or the home URL. Move the create page and every bound button follows.
 

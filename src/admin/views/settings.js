@@ -78,7 +78,8 @@ function pageLabel( page ) {
  * @param {Object}   props          Props.
  * @param {string}   props.label    Label.
  * @param {string}   props.help     Help text.
- * @param {string}   props.kind     'create' or 'reveal', for the new-page route.
+ * @param {string}   props.kind     Page kind for the new-page route: 'create',
+ *                                  'reveal', 'login', 'register' or 'account'.
  * @param {number}   props.value    Page id.
  * @param {Function} props.onChange Setter.
  * @return {Element} Control.
@@ -618,6 +619,183 @@ export default function SettingsView() {
 				<ExternalLink href="https://developers.cloudflare.com/turnstile/">
 					{ __( 'About Turnstile', 'psst' ) }
 				</ExternalLink>
+			</Section>
+
+			<Section
+				title={ __( 'Accounts', 'psst' ) }
+				description={ __(
+					'Optional. Lets people sign in on the front end and keep a record of the secrets they have sent. Everything here is off until you turn it on, and sending a secret never requires an account unless you say so.',
+					'psst'
+				) }
+			>
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __( 'Enable front end accounts', 'psst' ) }
+					help={ __(
+						'Turning this on for the first time creates a sign in, a create account and an account page.',
+						'psst'
+					) }
+					checked={ !! draft.accounts_enabled }
+					onChange={ set( 'accounts_enabled' ) }
+				/>
+
+				{ !! draft.accounts_enabled && (
+					<>
+						<Flex gap={ 4 } wrap align="flex-start">
+							<FlexItem isBlock>
+								<PagePicker
+									kind="login"
+									label={ __( 'Sign in page', 'psst' ) }
+									help={ __(
+										'Holds the Sign In Form block. wp-login.php redirects here.',
+										'psst'
+									) }
+									value={ draft.login_page_id }
+									onChange={ set( 'login_page_id' ) }
+								/>
+							</FlexItem>
+							<FlexItem isBlock>
+								<PagePicker
+									kind="register"
+									label={ __(
+										'Create account page',
+										'psst'
+									) }
+									help={ __(
+										'Holds the Create Account Form block.',
+										'psst'
+									) }
+									value={ draft.register_page_id }
+									onChange={ set( 'register_page_id' ) }
+								/>
+							</FlexItem>
+							<FlexItem isBlock>
+								<PagePicker
+									kind="account"
+									label={ __( 'Account page', 'psst' ) }
+									help={ __(
+										'Holds the Account block, where a signed-in user sees what they have sent.',
+										'psst'
+									) }
+									value={ draft.account_page_id }
+									onChange={ set( 'account_page_id' ) }
+								/>
+							</FlexItem>
+						</Flex>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Let visitors create an account',
+								'psst'
+							) }
+							help={ __(
+								'WordPress still decides: if registration is closed in Settings → General, or network-wide on multisite, it stays closed.',
+								'psst'
+							) }
+							checked={ !! draft.allow_registration }
+							onChange={ set( 'allow_registration' ) }
+						/>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Require an account to send a secret',
+								'psst'
+							) }
+							help={ __(
+								'Off means anyone can still send one anonymously, which is how Psst works by default.',
+								'psst'
+							) }
+							checked={ !! draft.require_login_to_create }
+							onChange={ set( 'require_login_to_create' ) }
+						/>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Keep users out of the WordPress admin',
+								'psst'
+							) }
+							help={ __(
+								'Anyone without a content role is redirected to the account page, their profile screen included. Administrators, editors and network administrators are unaffected.',
+								'psst'
+							) }
+							checked={ !! draft.block_admin_access }
+							onChange={ set( 'block_admin_access' ) }
+						/>
+
+						{ !! draft.block_admin_access && (
+							<Notice status="warning" isDismissible={ false }>
+								{ __(
+									'If you lock yourself out, wp-login.php?psst=bypass always shows the normal WordPress login.',
+									'psst'
+								) }
+							</Notice>
+						) }
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Record the secrets a signed-in user sends',
+								'psst'
+							) }
+							help={ __(
+								'Metadata only: when it was sent, who it was for, when it expires and whether it has been read. Never the secret, which this server cannot read either.',
+								'psst'
+							) }
+							checked={ !! draft.history_enabled }
+							onChange={ set( 'history_enabled' ) }
+						/>
+
+						{ !! draft.history_enabled && (
+							<TextControl
+								type="number"
+								__next40pxDefaultSize
+								__nextHasNoMarginBottom
+								label={ __(
+									'Keep records for (days)',
+									'psst'
+								) }
+								help={ __(
+									'Records are deleted after this long, whatever happened to the secret itself.',
+									'psst'
+								) }
+								min={ 1 }
+								max={ 3650 }
+								value={ draft.history_retention_days }
+								onChange={ ( value ) =>
+									set( 'history_retention_days' )(
+										Number( value )
+									)
+								}
+							/>
+						) }
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Let senders email the link from this site',
+								'psst'
+							) }
+							help={ __(
+								'Adds an optional "email this to them" box to the form.',
+								'psst'
+							) }
+							checked={ !! draft.email_delivery_enabled }
+							onChange={ set( 'email_delivery_enabled' ) }
+						/>
+
+						{ !! draft.email_delivery_enabled && (
+							<Notice status="warning" isDismissible={ false }>
+								{ __(
+									'This weakens the guarantee the rest of Psst makes. Normally the decryption key never reaches this server — it lives in the link fragment, which browsers do not send. To write the email, the server has to be given the key, and the key then sits in the recipient’s mailbox. Senders are told this before they tick the box, and it stays off unless they do.',
+									'psst'
+								) }
+							</Notice>
+						) }
+					</>
+				) }
 			</Section>
 
 			<Section title={ __( 'Uninstall', 'psst' ) }>

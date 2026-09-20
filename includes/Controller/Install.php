@@ -27,6 +27,28 @@ class Install implements Controller_Interface {
 	 */
 	public function register_actions(): void {
 		add_action( 'init', [ $this, 'ensure_caps' ], 5 );
+		add_action( 'update_option_' . Settings::OPTION, [ $this, 'on_settings_saved' ], 10, 2 );
+	}
+
+	/**
+	 * Create the account pages the first time the account layer is switched on.
+	 *
+	 * Not on activation: the layer is off by default, and three pages nobody
+	 * asked for appearing in a site's menu is a worse first impression than one
+	 * extra step when the feature is actually wanted.
+	 *
+	 * @param mixed $old_value The settings before the save.
+	 * @param mixed $value     The settings after it.
+	 *
+	 * @return void
+	 */
+	public function on_settings_saved( $old_value, $value ): void {
+		$was_on = ! empty( ( (array) $old_value )['accounts_enabled'] );
+		$is_on  = ! empty( ( (array) $value )['accounts_enabled'] );
+
+		if ( $is_on && ! $was_on ) {
+			self::ensure_account_pages();
+		}
 	}
 
 	/**
@@ -110,10 +132,66 @@ class Install implements Controller_Interface {
 	}
 
 	/**
-	 * The two kinds of page the plugin needs, keyed the way the settings are.
+	 * The two pages the routes need, keyed the way the settings are.
 	 */
 	public const PAGE_CREATE = 'create';
 	public const PAGE_REVEAL = 'reveal';
+
+	/**
+	 * The account pages, created only once the account layer is switched on.
+	 */
+	public const PAGE_LOGIN    = 'login';
+	public const PAGE_REGISTER = 'register';
+	public const PAGE_ACCOUNT  = 'account';
+
+	/**
+	 * Which setting holds the page id for each kind of page.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PAGE_SETTINGS = [
+		self::PAGE_CREATE   => 'create_page_id',
+		self::PAGE_REVEAL   => 'reveal_page_id',
+		self::PAGE_LOGIN    => 'login_page_id',
+		self::PAGE_REGISTER => 'register_page_id',
+		self::PAGE_ACCOUNT  => 'account_page_id',
+	];
+
+	/**
+	 * The setting that stores a given kind of page.
+	 *
+	 * @param string $kind One of the PAGE_* constants.
+	 *
+	 * @return string The setting key, or '' for an unknown kind.
+	 */
+	public static function setting_for_page( string $kind ): string {
+		return self::PAGE_SETTINGS[ $kind ] ?? '';
+	}
+
+	/**
+	 * Create the three account pages, if they are missing.
+	 *
+	 * @return void
+	 */
+	public static function ensure_account_pages(): void {
+		$settings = Settings::all();
+		$changed  = false;
+
+		foreach ( [ self::PAGE_LOGIN, self::PAGE_REGISTER, self::PAGE_ACCOUNT ] as $kind ) {
+			$key = self::setting_for_page( $kind );
+
+			if ( self::page_exists( (int) ( $settings[ $key ] ?? 0 ) ) ) {
+				continue;
+			}
+
+			$settings[ $key ] = self::create_page( $kind );
+			$changed          = true;
+		}
+
+		if ( $changed ) {
+			Settings::save( $settings );
+		}
+	}
 
 	/**
 	 * Create the two pages the routes need, if they are missing.
@@ -142,7 +220,7 @@ class Install implements Controller_Interface {
 	/**
 	 * What a page of each kind is made of.
 	 *
-	 * @param string $kind PAGE_CREATE or PAGE_REVEAL.
+	 * @param string $kind One of the PAGE_* constants.
 	 *
 	 * @return array{title: string, slug: string, content: string}|null Null for an unknown kind.
 	 */
@@ -161,6 +239,27 @@ class Install implements Controller_Interface {
 					'slug'    => 'share',
 					'content' => '<!-- wp:pattern {"slug":"psst/create-page"} /-->',
 				];
+
+			case self::PAGE_LOGIN:
+				return [
+					'title'   => _x( 'Sign In', 'login page title', 'psst' ),
+					'slug'    => 'sign-in',
+					'content' => '<!-- wp:pattern {"slug":"psst/sign-in-page"} /-->',
+				];
+
+			case self::PAGE_REGISTER:
+				return [
+					'title'   => _x( 'Create an Account', 'register page title', 'psst' ),
+					'slug'    => 'register',
+					'content' => '<!-- wp:pattern {"slug":"psst/register-page"} /-->',
+				];
+
+			case self::PAGE_ACCOUNT:
+				return [
+					'title'   => _x( 'Your Account', 'account page title', 'psst' ),
+					'slug'    => 'account',
+					'content' => '<!-- wp:pattern {"slug":"psst/account-page"} /-->',
+				];
 		}
 
 		return null;
@@ -169,7 +268,7 @@ class Install implements Controller_Interface {
 	/**
 	 * Insert a page of the given kind with the blocks it needs already in it.
 	 *
-	 * @param string $kind  PAGE_CREATE or PAGE_REVEAL.
+	 * @param string $kind  One of the PAGE_* constants.
 	 * @param bool   $reuse Return a published page that already has the slug
 	 *                      instead of adding another. Activation reuses; the
 	 *                      admin screen's "create a page" button does not, and

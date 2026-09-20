@@ -90,7 +90,13 @@ class Settings extends REST_Base {
 					'kind' => [
 						'required'          => true,
 						'type'              => 'string',
-						'enum'              => [ Install::PAGE_CREATE, Install::PAGE_REVEAL ],
+						'enum'              => [
+							Install::PAGE_CREATE,
+							Install::PAGE_REVEAL,
+							Install::PAGE_LOGIN,
+							Install::PAGE_REGISTER,
+							Install::PAGE_ACCOUNT,
+						],
 						'sanitize_callback' => 'sanitize_key',
 					],
 				],
@@ -241,9 +247,14 @@ class Settings extends REST_Base {
 	public function reset_settings(): \WP_REST_Response {
 		$defaults = Settings_Model::defaults();
 
-		// Keep the pages: resetting the numbers should not orphan the routes.
-		$defaults['create_page_id'] = (int) Settings_Model::get( 'create_page_id' );
-		$defaults['reveal_page_id'] = (int) Settings_Model::get( 'reveal_page_id' );
+		/*
+		 * Keep the pages: resetting the numbers should not orphan the routes,
+		 * and it should not leave three account pages published with nothing
+		 * pointing at them either.
+		 */
+		foreach ( [ 'create_page_id', 'reveal_page_id', 'login_page_id', 'register_page_id', 'account_page_id' ] as $page_key ) {
+			$defaults[ $page_key ] = (int) Settings_Model::get( $page_key );
+		}
 
 		Settings_Model::save( $defaults );
 

@@ -4,8 +4,10 @@
  *
  * Secrets are ephemeral by definition, so the default is to remove everything.
  * Action Scheduler is not initialised in this context, so its rows are removed
- * with direct queries; its tables are shared and never dropped. The two pages
- * are the site's content and stay.
+ * with direct queries; its tables are shared and never dropped. The pages are
+ * the site's content and stay, as do any user accounts — those belong to the
+ * site, not to this plugin, and deleting people because a plugin was removed
+ * would be an extraordinary thing for a plugin to do.
  *
  * @package Linchpin\Psst
  */
@@ -22,8 +24,12 @@ if ( is_array( $psst_settings ) && array_key_exists( 'delete_on_uninstall', $pss
 
 global $wpdb;
 
-// Every secret, 2.x and legacy.
-$psst_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ('psst_secret', 'secret')" );
+/*
+ * Every secret (2.x and legacy) and every sent-secret history row. The history
+ * is metadata about secrets that no longer exist, which is exactly as
+ * ephemeral as the secrets were, so it goes the same way.
+ */
+$psst_ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ('psst_secret', 'secret', 'psst_sent')" );
 
 foreach ( $psst_ids as $psst_id ) {
 	wp_delete_post( (int) $psst_id, true );

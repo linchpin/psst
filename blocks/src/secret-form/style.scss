@@ -181,3 +181,68 @@
 		--psst-accent: var(--wp--preset--color--warning, #b45309);
 	}
 }
+
+/**
+ * The account-aware additions: the recipient field, the email option and the
+ * disclosure that goes with it, and the prompt shown where the form would be
+ * on a site that requires an account to send.
+ */
+
+.psst-callout--warning {
+	--psst-accent: var(--wp--preset--color--vivid-amber, #b26200);
+
+	border-inline-start-color: var(--psst-accent);
+	padding-inline-end: var(--psst-gap, 1.5rem);
+
+	p + p {
+		margin-block-start: 0.5rem;
+	}
+}
+
+.wp-block-psst-secret-form {
+
+	.psst-form__field--check {
+		margin-block-end: var(--psst-gap);
+
+		> label {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.5rem;
+			font-weight: 600;
+		}
+
+		input[type="checkbox"] {
+			margin-block-start: 0.2em;
+			flex: 0 0 auto;
+		}
+
+		/* The disclosure and the note sit under the checkbox that reveals them. */
+		.psst-callout,
+		.psst-form__field {
+			margin-block-start: var(--psst-gap-small);
+			margin-inline-start: 1.6rem;
+		}
+
+		[hidden] {
+			display: none !important;
+		}
+	}
+
+	.psst-form__email-state {
+		margin-block-start: var(--psst-gap-small);
+
+		&[hidden] {
+			display: none !important;
+		}
+	}
+
+	.psst-form__signin-required {
+		margin-block-end: var(--psst-gap);
+		font-weight: 600;
+	}
+
+	.psst-form__alt {
+		margin-block-start: var(--psst-gap-small);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+	}
+}

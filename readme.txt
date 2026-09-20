@@ -36,10 +36,19 @@ Administrators can see that a secret exists, when it expires, and shred it. They
 * **Expiry.** Eleven choices from five minutes to one week, enforced by a scheduler and again at read time.
 * **Shred.** The sender or an administrator can destroy a secret before it is read.
 * **Two blocks.** A create form and a viewer, both built on the Interactivity API and styled from your theme's presets.
+* **Optional accounts.** A front end sign-in, registration and account area, so a signed-in sender keeps a record of the secrets they have sent: who each was for, when it expires, and whether it has been read. Metadata only, never the secret. Off by default; anonymous sending is unchanged.
 * **Hardening.** Secret pages send no-store, noindex, no-referrer, nosniff and frame-denial headers, are excluded from sitemaps and page caches, and can carry an opt-in Content-Security-Policy.
 * **Abuse controls.** Per-IP and site-wide rate limits, a honeypot field, and optional Cloudflare Turnstile that fails closed.
 * **Admin screen.** Settings, a metadata-only list of live secrets with a shred action, and a health check.
 * **Extensible.** Actions and filters for developers, none of which ever receives a key, a pass phrase, or plaintext.
+
+= Emailing a secret link =
+
+Psst can optionally email a share link for the sender. **This is off by default, and it is the one feature that weakens the guarantee the rest of the plugin makes.**
+
+Everywhere else, the decryption key is generated in the sender's browser and travels in the link's `#fragment`, which browsers never send to a server. For the site to email a link the recipient can open, the server has to be given that key, because the server is what sends the mail. The key is then in an email, in the recipient's mailbox, for as long as that message exists — anyone who can read the email can read the secret.
+
+Psst never stores, logs or hooks that key: it composes one message and is discarded. But the tradeoff is real, the sender is shown it in the form next to the checkbox, and a site that does not want it should leave the setting off. Copying the link and sending it yourself involves no key ever reaching the server.
 
 = Requirements =
 
@@ -97,6 +106,16 @@ Open **Settings → Psst → Health**. If the viewer page reads *Not set*, choos
 
 Not unless you enable Cloudflare Turnstile. See the *Third-party services* section above. There is no telemetry, no phone-home, and no external font or script on the secret pages.
 
+If you enable the optional email delivery feature, your own site sends mail through `wp_mail()` to the address a sender types. That goes wherever your site's mail already goes; nothing is sent to us.
+
+= Can a signed-in user see their old secrets? =
+
+They can see that a secret existed, who they said it was for, when it expires, and whether it has been read or shredded. They cannot see the secret. Nobody can: the server has no key, and after a reveal it does not even have the ciphertext. The account area is a record of what happened, not an archive.
+
+= Does the account feature lock me out of wp-admin? =
+
+Only if you switch that setting on, and only for users without a content role — administrators, editors and network administrators are unaffected. If you do lock yourself out, `wp-login.php?psst=bypass` always shows the normal WordPress login screen.
+
 = Can I use it with a classic theme? =
 
 The two blocks render on any theme, but the pages activation creates are built from block patterns, so a block theme gives the best result. On a classic theme, add the `psst/secret-form` and `psst/secret-viewer` blocks to pages of your own and select them under **Settings → Psst**.
@@ -116,6 +135,16 @@ Version 2 is a rewrite. On first load it removes the 1.x secrets, which were enc
 3. The confirmation with the one-time share link, its expiry, and the shred button.
 
 == Changelog ==
+
+= 2.2.0 =
+
+* Added an optional front end account layer: a sign-in page, registration, and an account area where a signed-in sender sees the secrets they have sent. Off by default.
+* Added a sent-secret history recording metadata only — identifier, recipient label, expiry, and whether the secret was read, shredded or expired. It never contains a secret, and it is pruned on a configurable schedule.
+* Added an optional setting to keep users without a content role out of wp-admin, their profile screen included, redirecting them to the account area instead. Super administrators are never locked out, and `wp-login.php?psst=bypass` is always available.
+* Added optional email delivery of a share link. This is the one feature that gives the server a decryption key; it is off by default, the tradeoff is shown to the sender at the point of use, and the key is never stored, logged or passed to a hook.
+* Added the `psst/login-form`, `psst/register-form` and `psst/account` blocks with matching patterns.
+* Added a `recipient` field to the create form and an optional requirement that senders be signed in.
+* Registration on multisite goes through the network signup path and adds the new account to the current site.
 
 = 2.0.0 =
 

@@ -39,6 +39,34 @@ if ( Settings::turnstile_enabled() ) {
 	);
 }
 
+/*
+ * A site that requires an account to send gets a prompt instead of a form. The
+ * REST route refuses the request either way; this just means the sender finds
+ * out before typing a secret rather than after.
+ */
+if ( Settings::require_login_to_create() && ! is_user_logged_in() ) {
+	$psst_login = Settings::get_login_url();
+	?>
+	<div <?php echo get_block_wrapper_attributes( [ 'class' => 'wp-block-psst-secret-form' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, Linchpin.Security.EscapeOutput.OutputNotEscaped -- Escaped attribute markup. ?>>
+		<p class="psst-form__signin-required"><?php esc_html_e( 'You need an account on this site to share a secret.', 'psst' ); ?></p>
+
+		<?php if ( '' !== $psst_login ) : ?>
+			<div class="wp-block-button">
+				<a class="wp-block-button__link wp-element-button" href="<?php echo esc_url( add_query_arg( 'redirect_to', rawurlencode( Settings::get_create_url() ), $psst_login ) ); ?>"><?php esc_html_e( 'Sign In', 'psst' ); ?></a>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( '' !== Settings::get_register_url() ) : ?>
+			<p class="psst-form__alt"><a href="<?php echo esc_url( Settings::get_register_url() ); ?>"><?php esc_html_e( 'Create an account', 'psst' ); ?></a></p>
+		<?php endif; ?>
+	</div>
+	<?php
+	return;
+}
+
+$psst_collect_recipient = Secret_Form::collects_recipient();
+$psst_email_delivery    = Settings::email_delivery_enabled();
+
 $psst_wrapper = get_block_wrapper_attributes(
 	[
 		'class'               => 'wp-block-psst-secret-form',
@@ -94,6 +122,80 @@ $psst_wrapper = get_block_wrapper_attributes(
 			</div>
 		<?php endif; ?>
 
+		<?php if ( $psst_collect_recipient ) : ?>
+			<div class="psst-form__field">
+				<label for="<?php echo esc_attr( $psst_uid ); ?>-recipient">
+					<?php esc_html_e( 'Who is it for?', 'psst' ); ?>
+					<span class="psst-form__optional"><?php esc_html_e( '(optional)', 'psst' ); ?></span>
+				</label>
+				<input
+					id="<?php echo esc_attr( $psst_uid ); ?>-recipient"
+					name="recipient"
+					type="text"
+					autocomplete="off"
+					spellcheck="false"
+					aria-describedby="<?php echo esc_attr( $psst_uid ); ?>-recipient-help"
+					data-wp-bind--value="context.recipient"
+					data-wp-on--input="actions.updateRecipient"
+				/>
+				<p id="<?php echo esc_attr( $psst_uid ); ?>-recipient-help" class="psst-form__help">
+					<?php if ( $psst_email_delivery ) : ?>
+						<?php esc_html_e( 'An email address, or just a name for your own records.', 'psst' ); ?>
+					<?php else : ?>
+						<?php esc_html_e( 'Only for your own records, so you can tell your secrets apart later.', 'psst' ); ?>
+					<?php endif; ?>
+				</p>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( $psst_email_delivery ) : ?>
+			<div class="psst-form__field psst-form__field--check">
+				<label for="<?php echo esc_attr( $psst_uid ); ?>-send">
+					<input
+						id="<?php echo esc_attr( $psst_uid ); ?>-send"
+						type="checkbox"
+						name="send_email"
+						data-wp-bind--checked="context.sendEmail"
+						data-wp-on--change="actions.toggleSendEmail"
+					/>
+					<?php esc_html_e( 'Email this link to them for me', 'psst' ); ?>
+				</label>
+
+				<?php
+				/*
+				 * The disclosure. It says what it costs, in the place where the
+				 * choice is made, because a warning in the documentation is not
+				 * a warning to the person clicking the box.
+				 */
+				?>
+				<div class="psst-callout psst-callout--warning" role="note" data-wp-bind--hidden="!context.sendEmail">
+					<strong class="psst-callout__heading"><?php esc_html_e( 'This is less safe', 'psst' ); ?></strong>
+					<p>
+						<?php esc_html_e( 'Normally the key that unlocks your secret never leaves your browser. To email the link, this site has to be given the key so it can write the message — and the key then sits in your recipient\'s mailbox for as long as they keep it. Anyone who can read that email can read the secret.', 'psst' ); ?>
+					</p>
+					<p><?php esc_html_e( 'Copying the link and sending it yourself, through something you already trust, avoids both.', 'psst' ); ?></p>
+				</div>
+
+				<?php if ( is_user_logged_in() ) : ?>
+					<div class="psst-form__field" data-wp-bind--hidden="!context.sendEmail">
+						<label for="<?php echo esc_attr( $psst_uid ); ?>-note">
+							<?php esc_html_e( 'Add a note', 'psst' ); ?>
+							<span class="psst-form__optional"><?php esc_html_e( '(optional)', 'psst' ); ?></span>
+						</label>
+						<textarea
+							id="<?php echo esc_attr( $psst_uid ); ?>-note"
+							name="note"
+							rows="2"
+							maxlength="<?php echo esc_attr( (string) \Linchpin\Psst\Model\Share_Email::MAX_NOTE_LENGTH ); ?>"
+							data-wp-bind--value="context.note"
+							data-wp-on--input="actions.updateNote"
+						></textarea>
+						<p class="psst-form__help"><?php esc_html_e( 'Goes in the email. Do not put anything secret in here — this part is not encrypted.', 'psst' ); ?></p>
+					</div>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+
 		<div class="psst-form__field">
 			<label for="<?php echo esc_attr( $psst_uid ); ?>-expiry"><?php esc_html_e( 'Expiration', 'psst' ); ?></label>
 			<select id="<?php echo esc_attr( $psst_uid ); ?>-expiry" name="expiry" data-wp-on--change="actions.updateExpiry">
@@ -132,6 +234,10 @@ $psst_wrapper = get_block_wrapper_attributes(
 		<p class="screen-reader-text" aria-live="polite" data-wp-text="state.copyAnnouncement"></p>
 
 		<p class="psst-form__expires"><strong data-wp-text="context.expiresLabel"></strong></p>
+
+		<?php if ( $psst_email_delivery ) : ?>
+			<p class="psst-form__email-state" role="status" data-wp-text="state.emailMessage" data-wp-bind--hidden="!state.hasEmailState"></p>
+		<?php endif; ?>
 
 		<div class="psst-callout psst-callout--tip" role="note">
 			<strong class="psst-callout__heading"><?php esc_html_e( 'Quick Tip!', 'psst' ); ?></strong>

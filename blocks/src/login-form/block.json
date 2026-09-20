@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "psst/login-form",
+	"version": "1.0.0",
+	"title": "Sign In Form",
+	"category": "widgets",
+	"icon": "unlock",
+	"description": "Sign in without leaving the front end. Credentials are checked by WordPress itself; a failed attempt comes back to this page.",
+	"keywords": [ "psst", "login", "sign in", "account" ],
+	"attributes": {
+		"heading": {
+			"type": "string",
+			"default": "Sign in"
+		},
+		"showRegisterLink": {
+			"type": "boolean",
+			"default": true
+		},
+		"showLostPassword": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"renaming": false,
+		"reusable": false,
+		"align": [ "wide" ],
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true }
+	},
+	"textdomain": "psst",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./edit.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -147,6 +147,10 @@ class Blocks implements Controller_Interface {
 					'gone'             => __( 'This secret is no longer available.', 'psst' ),
 					'unsupported'      => __( 'Your browser does not support the encryption this page needs.', 'psst' ),
 					'passphraseNeeded' => __( 'Enter the pass phrase to continue.', 'psst' ),
+					'emailSending'     => __( 'Sending the email…', 'psst' ),
+					/* translators: %s: the recipient's email address. */
+					'emailSent'        => __( 'Sent to %s. The link is above too, in case you need it.', 'psst' ),
+					'emailFailed'      => __( 'The email could not be sent. Copy the link above and send it yourself.', 'psst' ),
 				],
 			]
 		);
