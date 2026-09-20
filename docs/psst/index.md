@@ -11,7 +11,7 @@ Psst, short for Pretty Secure Secret Transmissions, is a WordPress plugin by [Li
 <!-- wp:docspress/audience-paths {"eyebrow":"Choose a starting point","title":"What are you here to do?","description":"Psst serves the site owner who installs it, the developer who themes or extends it, and the security reviewer who has to sign off on it.","paths":[{"title":"Install and configure","description":"Requirements, Composer installation, the two pages activation creates, and the settings that shape what senders see.","url":"","cta":"","icon":"rocket","accent":"blue","newTab":false},{"title":"Understand the security model","description":"Exactly what the browser encrypts, what the server stores, how a reveal is made one-shot, and what the tests prove.","url":"","cta":"","icon":"shield","accent":"green","newTab":false},{"title":"Extend and operate","description":"REST routes, hooks, settings keys, the blocks and patterns, hardening headers, and how to diagnose a link that will not open.","url":"","cta":"","icon":"code","accent":"gold","newTab":false}],"columns":3,"tone":"theme","textAlign":"left","compact":false,"showNumbers":false} /-->
 
 - **[Getting started](getting-started/index.md)** covers requirements, installation, configuration, and sending a first secret.
-- **[Guides](guides/index.md)** explain the encryption, the sender and recipient experience, hardening, and upgrading from 1.x.
+- **[Guides](guides/index.md)** explain the encryption, the sender and recipient experience, the optional account layer, hardening, and upgrading from 1.x.
 - **[Reference](reference/index.md)** lists every REST route, hook, setting, block, pattern, and development command.
 - **[Troubleshooting](troubleshooting.md)** pairs each symptom with the check that identifies it.
 
@@ -35,6 +35,7 @@ Five properties follow from that flow, and each is covered by the checked-in tes
 | `psst/secret-viewer` block | The interstitial, pass-phrase prompt, reveal, and "no longer available" states. |
 | `psst/create-page` pattern | Heading, intro, and the form, with starter FAQ content. Activation places it on the **Share a Secret** page. |
 | `psst/cross-sell` pattern | A "create your own" call to action whose button is bound to the create page URL. |
+| `psst/login-form`, `psst/register-form`, `psst/account` blocks | The optional front end account layer: sign in, create an account, and a signed-in sender's record of what they have sent. Off by default. See [Accounts](guides/accounts.md). |
 | Admin screen | Settings, a metadata-only list of live secrets with a shred action, and a health check. Lives under **Settings → Psst**, or **Mantle → Psst** when Mantle is installed. |
 | REST namespace `psst/v1` | Create, reveal, shred, public config, and administrator routes. |
 

@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "psst/account",
+	"version": "1.0.0",
+	"title": "Account",
+	"category": "widgets",
+	"icon": "id",
+	"description": "A signed-in user's record of the secrets they have sent: who each was for, when it expires, and whether it has been read. Never the secrets themselves.",
+	"keywords": [ "psst", "account", "history", "sent" ],
+	"attributes": {
+		"heading": {
+			"type": "string",
+			"default": "Your account"
+		},
+		"perPage": {
+			"type": "integer",
+			"default": 20
+		},
+		"showSignOut": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"renaming": false,
+		"reusable": false,
+		"align": [ "wide", "full" ],
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true }
+	},
+	"textdomain": "psst",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./edit.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

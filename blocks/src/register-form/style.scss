@@ -1,0 +1,10 @@
+/**
+ * Structural styles for the register-form block.
+ */
+
+@use "../shared/account" as account;
+
+.wp-block-psst-register-form {
+
+	@include account.psst-account-styles;
+}

@@ -70,19 +70,46 @@ final class Secret_Form {
 		$expiry     = self::expiry( $attributes['defaultExpiry'] );
 
 		return [
-			'status'         => 'idle',
-			'message'        => '',
-			'passphrase'     => '',
-			'expiry'         => $expiry['selected'],
-			'error'          => '',
-			'shareUrl'       => '',
-			'expiresLabel'   => '',
-			'copied'         => false,
-			'tipDismissed'   => false,
-			'hp'             => '',
-			'showPassphrase' => $attributes['showPassphrase'],
-			'maxLength'      => Settings::max_plaintext_bytes(),
-			'turnstile'      => Settings::turnstile_enabled(),
+			'status'           => 'idle',
+			'message'          => '',
+			'passphrase'       => '',
+			'expiry'           => $expiry['selected'],
+			'error'            => '',
+			'shareUrl'         => '',
+			'expiresLabel'     => '',
+			'copied'           => false,
+			'tipDismissed'     => false,
+			'hp'               => '',
+			'showPassphrase'   => $attributes['showPassphrase'],
+			'maxLength'        => Settings::max_plaintext_bytes(),
+			'turnstile'        => Settings::turnstile_enabled(),
+
+			'recipient'        => '',
+			'note'             => '',
+			'sendEmail'        => false,
+			'emailState'       => '',
+			'collectRecipient' => self::collects_recipient(),
+			'emailDelivery'    => Settings::email_delivery_enabled(),
+
+			/*
+			 * A REST nonce, and only for a signed-in sender. Without one the
+			 * create request stays cookie-less, which is how this plugin has
+			 * always behaved and how it still behaves on every site that has
+			 * not turned accounts on.
+			 */
+			'nonce'            => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 		];
+	}
+
+	/**
+	 * Whether the form offers a recipient field at all.
+	 *
+	 * There are two separate reasons to ask: the sender wants it in their own
+	 * history, or the site can email the link. Either is enough.
+	 *
+	 * @return bool
+	 */
+	public static function collects_recipient(): bool {
+		return ( Settings::history_enabled() && is_user_logged_in() ) || Settings::email_delivery_enabled();
 	}
 }

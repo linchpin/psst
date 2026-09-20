@@ -2,9 +2,8 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { useEffect, useMemo, useState } from '@wordpress/element';
-import { useDispatch, useSelect } from '@wordpress/data';
-import { store as coreStore } from '@wordpress/core-data';
+import { useEffect, useState } from '@wordpress/element';
+import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import {
@@ -13,7 +12,6 @@ import {
 	CardBody,
 	CardHeader,
 	CheckboxControl,
-	ComboboxControl,
 	ExternalLink,
 	Flex,
 	FlexItem,
@@ -23,7 +21,6 @@ import {
 	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
-import { plus } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -50,184 +47,6 @@ function Section( { title, description, children } ) {
 			</CardHeader>
 			<CardBody>{ children }</CardBody>
 		</Card>
-	);
-}
-
-/**
- * A page's title, or a placeholder when it has none.
- *
- * @param {Object} page A REST page record.
- * @return {string} Label.
- */
-function pageLabel( page ) {
-	const title = page?.title?.rendered || `#${ page?.id }`;
-
-	// Two pages can share a title (a second "Secret" page, say); the slug is
-	// what tells them apart, and it is also what the share links will show.
-	return page?.slug ? `${ title } (/${ page.slug }/)` : title;
-}
-
-/**
- * Choose a page by searching for it, or make a new one that already holds
- * the blocks this kind of page needs.
- *
- * The search runs on the server: a site with hundreds of pages must not be
- * handed a truncated list to scroll through. The selected page is fetched by
- * id so its title shows whether or not it is in the current results.
- *
- * @param {Object}   props          Props.
- * @param {string}   props.label    Label.
- * @param {string}   props.help     Help text.
- * @param {string}   props.kind     'create' or 'reveal', for the new-page route.
- * @param {number}   props.value    Page id.
- * @param {Function} props.onChange Setter.
- * @return {Element} Control.
- */
-function PagePicker( { label, help, kind, value, onChange } ) {
-	const [ search, setSearch ] = useState( '' );
-	const [ results, setResults ] = useState( [] );
-	const [ isSearching, setSearching ] = useState( false );
-	const [ isCreating, setCreating ] = useState( false );
-	const { createSuccessNotice, createErrorNotice } =
-		useDispatch( noticesStore );
-
-	const selected = useSelect(
-		( select ) =>
-			value
-				? select( coreStore ).getEntityRecord(
-						'postType',
-						'page',
-						value,
-						{ _fields: 'id,title,slug' }
-					)
-				: null,
-		[ value ]
-	);
-
-	useEffect( () => {
-		let cancelled = false;
-		setSearching( true );
-
-		const query = new URLSearchParams( {
-			per_page: '20',
-			status: 'publish',
-			orderby: search ? 'relevance' : 'title',
-			order: 'asc',
-			_fields: 'id,title,slug',
-		} );
-
-		if ( search ) {
-			query.set( 'search', search );
-		}
-
-		const timer = setTimeout( () => {
-			apiFetch( { path: `/wp/v2/pages?${ query.toString() }` } )
-				.then( ( pages ) => {
-					if ( ! cancelled ) {
-						setResults( Array.isArray( pages ) ? pages : [] );
-					}
-				} )
-				.catch( () => {
-					if ( ! cancelled ) {
-						setResults( [] );
-					}
-				} )
-				.finally( () => {
-					if ( ! cancelled ) {
-						setSearching( false );
-					}
-				} );
-		}, 250 );
-
-		return () => {
-			cancelled = true;
-			clearTimeout( timer );
-		};
-	}, [ search ] );
-
-	const options = useMemo( () => {
-		const list = results.map( ( page ) => ( {
-			value: String( page.id ),
-			label: pageLabel( page ),
-		} ) );
-
-		if (
-			selected &&
-			! list.some( ( o ) => o.value === String( selected.id ) )
-		) {
-			list.unshift( {
-				value: String( selected.id ),
-				label: pageLabel( selected ),
-			} );
-		}
-
-		return list;
-	}, [ results, selected ] );
-
-	const createPage = async () => {
-		setCreating( true );
-
-		try {
-			const page = await apiFetch( {
-				path: '/psst/v1/settings/pages',
-				method: 'POST',
-				data: { kind },
-			} );
-
-			onChange( Number( page.id ) );
-			createSuccessNotice(
-				__(
-					'Page created and selected. Save settings to start using it.',
-					'psst'
-				),
-				{
-					type: 'snackbar',
-					actions: page.link
-						? [
-								{
-									label: __( 'View page', 'psst' ),
-									url: page.link,
-								},
-							]
-						: [],
-				}
-			);
-		} catch ( err ) {
-			createErrorNotice(
-				err?.message || __( 'The page could not be created.', 'psst' ),
-				{ type: 'snackbar' }
-			);
-		} finally {
-			setCreating( false );
-		}
-	};
-
-	return (
-		<div className="psst-admin__page-picker">
-			<ComboboxControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ label }
-				help={ help }
-				value={ value ? String( value ) : '' }
-				options={ options }
-				isLoading={ isSearching }
-				onFilterValueChange={ setSearch }
-				onChange={ ( next ) => onChange( next ? Number( next ) : 0 ) }
-				placeholder={ __( 'Search pages…', 'psst' ) }
-				allowReset
-			/>
-			<Button
-				__next40pxDefaultSize
-				variant="tertiary"
-				icon={ plus }
-				isBusy={ isCreating }
-				disabled={ isCreating }
-				onClick={ createPage }
-			>
-				{ __( 'Create a new page', 'psst' ) }
-			</Button>
-		</div>
 	);
 }
 
@@ -409,41 +228,6 @@ export default function SettingsView() {
 	return (
 		<div className="psst-admin__view">
 			<Section
-				title={ __( 'Pages', 'psst' ) }
-				description={ __(
-					'Secret links point at the viewer page; the form lives on the create page. Both were created on activation and can be changed here.',
-					'psst'
-				) }
-			>
-				<Flex gap={ 4 } wrap>
-					<FlexItem isBlock>
-						<PagePicker
-							kind="create"
-							label={ __( 'Create page', 'psst' ) }
-							help={ __(
-								'The page holding the Secret Form block. "Create a new secret" links go here.',
-								'psst'
-							) }
-							value={ draft.create_page_id }
-							onChange={ set( 'create_page_id' ) }
-						/>
-					</FlexItem>
-					<FlexItem isBlock>
-						<PagePicker
-							kind="reveal"
-							label={ __( 'Viewer page', 'psst' ) }
-							help={ __(
-								'The page holding the Secret Viewer block. Its slug becomes the link prefix, so keep it short.',
-								'psst'
-							) }
-							value={ draft.reveal_page_id }
-							onChange={ set( 'reveal_page_id' ) }
-						/>
-					</FlexItem>
-				</Flex>
-			</Section>
-
-			<Section
 				title={ __( 'Expiration', 'psst' ) }
 				description={ __(
 					'Which lifetimes a sender may choose, and which is pre-selected.',
@@ -618,6 +402,148 @@ export default function SettingsView() {
 				<ExternalLink href="https://developers.cloudflare.com/turnstile/">
 					{ __( 'About Turnstile', 'psst' ) }
 				</ExternalLink>
+			</Section>
+
+			<Section
+				title={ __( 'Accounts', 'psst' ) }
+				description={ __(
+					'Optional. Lets people sign in on the front end and keep a record of the secrets they have sent. Everything here is off until you turn it on, and sending a secret never requires an account unless you say so.',
+					'psst'
+				) }
+			>
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __( 'Enable front end accounts', 'psst' ) }
+					help={ __(
+						'Turning this on for the first time creates a sign in, a create account and an account page.',
+						'psst'
+					) }
+					checked={ !! draft.accounts_enabled }
+					onChange={ set( 'accounts_enabled' ) }
+				/>
+
+				{ !! draft.accounts_enabled && (
+					<>
+						<p className="psst-admin__hint">
+							{ __(
+								'The sign in, create account and account pages are managed on the Pages tab, along with the create and viewer pages.',
+								'psst'
+							) }
+						</p>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Let visitors create an account',
+								'psst'
+							) }
+							help={ __(
+								'WordPress still decides: if registration is closed in Settings → General, or network-wide on multisite, it stays closed.',
+								'psst'
+							) }
+							checked={ !! draft.allow_registration }
+							onChange={ set( 'allow_registration' ) }
+						/>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Require an account to send a secret',
+								'psst'
+							) }
+							help={ __(
+								'Off means anyone can still send one anonymously, which is how Psst works by default.',
+								'psst'
+							) }
+							checked={ !! draft.require_login_to_create }
+							onChange={ set( 'require_login_to_create' ) }
+						/>
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Keep users out of the WordPress admin',
+								'psst'
+							) }
+							help={ __(
+								'Anyone without a content role is redirected to the account page, their profile screen included. Administrators, editors and network administrators are unaffected.',
+								'psst'
+							) }
+							checked={ !! draft.block_admin_access }
+							onChange={ set( 'block_admin_access' ) }
+						/>
+
+						{ !! draft.block_admin_access && (
+							<Notice status="warning" isDismissible={ false }>
+								{ __(
+									'If you lock yourself out, wp-login.php?psst=bypass always shows the normal WordPress login.',
+									'psst'
+								) }
+							</Notice>
+						) }
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Record the secrets a signed-in user sends',
+								'psst'
+							) }
+							help={ __(
+								'Metadata only: when it was sent, who it was for, when it expires and whether it has been read. Never the secret, which this server cannot read either.',
+								'psst'
+							) }
+							checked={ !! draft.history_enabled }
+							onChange={ set( 'history_enabled' ) }
+						/>
+
+						{ !! draft.history_enabled && (
+							<TextControl
+								type="number"
+								__next40pxDefaultSize
+								__nextHasNoMarginBottom
+								label={ __(
+									'Keep records for (days)',
+									'psst'
+								) }
+								help={ __(
+									'Records are deleted after this long, whatever happened to the secret itself.',
+									'psst'
+								) }
+								min={ 1 }
+								max={ 3650 }
+								value={ draft.history_retention_days }
+								onChange={ ( value ) =>
+									set( 'history_retention_days' )(
+										Number( value )
+									)
+								}
+							/>
+						) }
+
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Let senders email the link from this site',
+								'psst'
+							) }
+							help={ __(
+								'Adds an optional "email this to them" box to the form.',
+								'psst'
+							) }
+							checked={ !! draft.email_delivery_enabled }
+							onChange={ set( 'email_delivery_enabled' ) }
+						/>
+
+						{ !! draft.email_delivery_enabled && (
+							<Notice status="warning" isDismissible={ false }>
+								{ __(
+									'This weakens the guarantee the rest of Psst makes. Normally the decryption key never reaches this server — it lives in the link fragment, which browsers do not send. To write the email, the server has to be given the key, and the key then sits in the recipient’s mailbox. Senders are told this before they tick the box, and it stays off unless they do.',
+									'psst'
+								) }
+							</Notice>
+						) }
+					</>
+				) }
 			</Section>
 
 			<Section title={ __( 'Uninstall', 'psst' ) }>

@@ -1,0 +1,197 @@
+/**
+ * Shared structural styles for the three account blocks.
+ *
+ * Preset variables only, with fallbacks, so the theme's palette and spacing
+ * apply without the plugin knowing them — the same approach the secret form
+ * takes. Each block `@use`s this, so a page loads exactly the one copy that
+ * belongs to the block it rendered.
+ */
+
+@mixin psst-account-styles {
+	--psst-gap: var(--wp--preset--spacing--40, 1.5rem);
+	--psst-gap-small: var(--wp--preset--spacing--20, 0.75rem);
+	--psst-border: var(--wp--preset--color--border-light, rgba(0, 0, 0, 0.2));
+	--psst-radius: var(--wp--custom--border-radius, 4px);
+	--psst-muted: color-mix(in srgb, currentcolor 65%, transparent);
+
+	.psst-account__heading {
+		margin-block-end: var(--psst-gap-small);
+	}
+
+	.psst-account__intro,
+	.psst-account__note {
+		color: var(--psst-muted);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+	}
+
+	.psst-account__field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-block-end: var(--psst-gap);
+
+		label {
+			font-weight: 600;
+		}
+	}
+
+	input[type="text"],
+	input[type="email"],
+	input[type="password"] {
+		width: 100%;
+		box-sizing: border-box;
+		font: inherit;
+		padding: var(--psst-gap-small);
+		border: 1px solid var(--psst-border);
+		border-radius: var(--psst-radius);
+		background: var(--wp--preset--color--base, #fff);
+		color: inherit;
+	}
+
+	.psst-account__help {
+		margin: 0;
+		font-size: var(--wp--preset--font-size--small, 0.875rem);
+		color: var(--psst-muted);
+	}
+
+	.psst-account__error {
+		padding: var(--psst-gap-small);
+		border-inline-start: 3px solid var(--wp--preset--color--vivid-red, #d63638);
+		background: color-mix(in srgb, var(--wp--preset--color--vivid-red, #d63638) 8%, transparent);
+	}
+
+	.psst-account__alt {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--psst-gap-small);
+		margin-block-start: var(--psst-gap);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+	}
+
+	/* The honeypot. Off-screen rather than display:none, which some bots detect. */
+	.psst-account__hp {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	/*
+	 * wp_login_form() emits core's own markup, which this has no control over.
+	 * Style it to match the fields above rather than restating it.
+	 */
+	.login-username,
+	.login-password {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin-block-end: var(--psst-gap);
+
+		label {
+			font-weight: 600;
+		}
+	}
+
+	.login-remember {
+		margin-block-end: var(--psst-gap);
+
+		label {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+	}
+}
+
+@mixin psst-history-styles {
+
+	.psst-history {
+		width: 100%;
+		margin-block: var(--psst-gap);
+		border-collapse: collapse;
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+
+		th,
+		td {
+			padding: var(--psst-gap-small);
+			text-align: start;
+			border-block-end: 1px solid var(--psst-border);
+			vertical-align: top;
+		}
+
+		th {
+			font-weight: 600;
+		}
+
+		code {
+			font-family: var(--wp--preset--font-family--monospace, monospace);
+		}
+	}
+
+	.psst-history__none {
+		color: var(--psst-muted);
+	}
+
+	.psst-history__badge {
+		display: inline-block;
+		margin-inline-start: 0.4em;
+		padding: 0.1em 0.5em;
+		border: 1px solid var(--psst-border);
+		border-radius: 999px;
+		font-size: 0.75em;
+		white-space: nowrap;
+	}
+
+	.psst-history__row.is-revealed .psst-history__state {
+		font-weight: 600;
+	}
+
+	.psst-history__row.is-expired,
+	.psst-history__row.is-shredded {
+		color: var(--psst-muted);
+	}
+
+	.psst-history__pagination {
+		display: flex;
+		gap: var(--psst-gap-small);
+		flex-wrap: wrap;
+	}
+
+	/*
+	 * A five column table does not fit a phone. Below the breakpoint each row
+	 * becomes a stack of labelled values, using the data-label the template
+	 * already puts on every cell.
+	 */
+	@media (max-width: 600px) {
+
+		.psst-history {
+
+			thead {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				overflow: hidden;
+				clip-path: inset(50%);
+			}
+
+			tr {
+				display: block;
+				margin-block-end: var(--psst-gap);
+				border-block-end: 2px solid var(--psst-border);
+			}
+
+			td {
+				display: flex;
+				justify-content: space-between;
+				gap: var(--psst-gap-small);
+				border-block-end: 0;
+
+				&::before {
+					content: attr(data-label);
+					font-weight: 600;
+				}
+			}
+		}
+	}
+}

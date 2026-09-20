@@ -33,13 +33,13 @@ class Hardening implements Controller_Interface {
 	}
 
 	/**
-	 * On a secret page: no caching, no indexing, no referrers, no framing, and
-	 * none of the head links that hand the URL to a third party.
+	 * On a secret or account page: no caching, no indexing, no referrers, no
+	 * framing, and none of the head links that hand the URL to a third party.
 	 *
 	 * @return void
 	 */
 	public function harden_request(): void {
-		if ( ! Route::is_secret_page() ) {
+		if ( ! Route::is_secret_page() && ! Route::is_account_page() ) {
 			return;
 		}
 
@@ -121,7 +121,11 @@ class Hardening implements Controller_Interface {
 	}
 
 	/**
-	 * The empty /s/ page has no reason to be indexed.
+	 * Keep the pages that are not content out of the sitemap.
+	 *
+	 * The empty /s/ page has nothing on it until a secret id is in the URL, and
+	 * a sign-in, registration or account page is plumbing rather than something
+	 * a search engine should be sending people to.
 	 *
 	 * @param array<string, mixed> $args      Query args.
 	 * @param string               $post_type Post type.
@@ -129,9 +133,25 @@ class Hardening implements Controller_Interface {
 	 * @return array<string, mixed>
 	 */
 	public function no_sitemap_reveal_page( $args, $post_type ): array {
-		if ( 'page' === $post_type && Settings::reveal_page_id() > 0 ) {
-			$args['post__not_in'] = array_merge( (array) ( $args['post__not_in'] ?? [] ), [ Settings::reveal_page_id() ] );
+		if ( 'page' !== $post_type ) {
+			return $args;
 		}
+
+		$exclude = [ Settings::reveal_page_id() ];
+
+		if ( Settings::accounts_enabled() ) {
+			foreach ( [ 'login_page_id', 'register_page_id', 'account_page_id' ] as $key ) {
+				$exclude[] = (int) Settings::get( $key );
+			}
+		}
+
+		$exclude = array_filter( $exclude, static fn( int $page_id ): bool => $page_id > 0 );
+
+		if ( empty( $exclude ) ) {
+			return $args;
+		}
+
+		$args['post__not_in'] = array_merge( (array) ( $args['post__not_in'] ?? [] ), $exclude );
 
 		return $args;
 	}

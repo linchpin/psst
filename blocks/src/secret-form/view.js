@@ -32,19 +32,33 @@ const i18n = () => shared.i18n || {};
 /**
  * POST JSON to a psst/v1 route.
  *
+ * Cookie-less by default, which is what makes an anonymous secret anonymous:
+ * the server is told nothing about who is sending it, because it is sent
+ * nothing to be told with. A nonce is only ever present for a signed-in sender
+ * on a site that has turned accounts on, and only then do credentials go with
+ * the request — because only then is there a session the server needs.
+ *
  * @param {string} path    Route, relative to the namespace.
  * @param {Object} body    JSON body.
  * @param {Object} headers Extra headers.
  * @param {string} method  HTTP method.
+ * @param {string} nonce   REST nonce, or '' to stay anonymous.
  * @return {Promise<{ok: boolean, status: number, data: any}>} The response.
  */
-async function request( path, body, headers = {}, method = 'POST' ) {
+async function request(
+	path,
+	body,
+	headers = {},
+	method = 'POST',
+	nonce = ''
+) {
 	const response = await fetch( `${ config().restUrl }${ path }`, {
 		method,
-		credentials: 'omit',
+		credentials: nonce ? 'same-origin' : 'omit',
 		headers: {
 			'Content-Type': 'application/json',
 			Accept: 'application/json',
+			...( nonce ? { 'X-WP-Nonce': nonce } : {} ),
 			...headers,
 		},
 		body: body ? JSON.stringify( body ) : undefined,
@@ -59,6 +73,39 @@ async function request( path, body, headers = {}, method = 'POST' ) {
 	}
 
 	return { ok: response.ok, status: response.status, data };
+}
+
+/**
+ * Ask the server to email the share link.
+ *
+ * Only the key fragment is sent, never a whole URL: the server rebuilds the
+ * rest from the id it already has, so this cannot be used to mail an arbitrary
+ * link from the site's own domain.
+ *
+ * @param {Object} context The block context.
+ * @param {string} key     The key fragment.
+ * @return {Promise<void>} Resolves once the attempt has been reported.
+ */
+async function sendShareEmail( context, key ) {
+	context.emailState = 'sending';
+
+	try {
+		const result = await request(
+			`secrets/${ secrets.id }/notify`,
+			{
+				recipient: context.recipient,
+				fragment: key,
+				note: context.note || '',
+			},
+			{ 'X-Psst-Manage-Token': secrets.token },
+			'POST',
+			context.nonce || ''
+		);
+
+		context.emailState = result.ok ? 'sent' : 'failed';
+	} catch {
+		context.emailState = 'failed';
+	}
 }
 
 const { state } = store( 'psst/secret-form', {
@@ -106,6 +153,26 @@ const { state } = store( 'psst/secret-form', {
 		get copyAnnouncement() {
 			return getContext().copied ? i18n().copied : '';
 		},
+		get hasEmailState() {
+			return getContext().emailState !== '';
+		},
+		get emailMessage() {
+			const { emailState, recipient } = getContext();
+
+			if ( emailState === 'sending' ) {
+				return i18n().emailSending;
+			}
+
+			if ( emailState === 'sent' ) {
+				return ( i18n().emailSent || '' ).replace( '%s', recipient );
+			}
+
+			if ( emailState === 'failed' ) {
+				return i18n().emailFailed;
+			}
+
+			return '';
+		},
 	},
 
 	actions: {
@@ -121,6 +188,15 @@ const { state } = store( 'psst/secret-form', {
 		},
 		updateHp( event ) {
 			getContext().hp = event.target.value;
+		},
+		updateRecipient( event ) {
+			getContext().recipient = event.target.value;
+		},
+		updateNote( event ) {
+			getContext().note = event.target.value;
+		},
+		toggleSendEmail( event ) {
+			getContext().sendEmail = event.target.checked;
 		},
 		dismissTip() {
 			getContext().tipDismissed = true;
@@ -159,12 +235,19 @@ const { state } = store( 'psst/secret-form', {
 					iterations: config().kdfIterations,
 				} );
 
-				const result = yield request( 'secrets', {
-					...body,
-					ttl_minutes: context.expiry,
-					hp: context.hp || '',
-					challenge: turnstile ? turnstile.value : null,
-				} );
+				const result = yield request(
+					'secrets',
+					{
+						...body,
+						ttl_minutes: context.expiry,
+						hp: context.hp || '',
+						challenge: turnstile ? turnstile.value : null,
+						recipient: context.recipient || '',
+					},
+					{},
+					'POST',
+					context.nonce || ''
+				);
 
 				if ( ! result.ok ) {
 					context.status = 'error';
@@ -193,6 +276,16 @@ const { state } = store( 'psst/secret-form', {
 				context.passphrase = '';
 				context.copied = false;
 				context.status = 'confirmed';
+
+				/*
+				 * The one place a key is deliberately handed to the server, and
+				 * only when the sender ticked the box that says so. It happens
+				 * after the secret exists, so a mail failure costs the email and
+				 * not the secret — the link is already on screen to copy.
+				 */
+				if ( context.sendEmail && context.recipient ) {
+					yield sendShareEmail( context, key );
+				}
 			} catch {
 				context.status = 'error';
 				context.error = i18n().network;
@@ -228,7 +321,8 @@ const { state } = store( 'psst/secret-form', {
 				`secrets/${ secrets.id }`,
 				null,
 				{ 'X-Psst-Manage-Token': secrets.token },
-				'DELETE'
+				'DELETE',
+				context.nonce || ''
 			);
 
 			// A 404 means it was already read or expired: from here that is the same outcome.
@@ -254,6 +348,10 @@ const { state } = store( 'psst/secret-form', {
 			context.expiresLabel = '';
 			context.copied = false;
 			context.hp = '';
+			context.recipient = '';
+			context.note = '';
+			context.sendEmail = false;
+			context.emailState = '';
 			context.status = 'idle';
 
 			if ( window.turnstile ) {

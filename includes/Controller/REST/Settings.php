@@ -82,18 +82,25 @@ class Settings extends REST_Base {
 			$this->get_api_namespace(),
 			'/settings/pages',
 			[
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => [ $this, 'create_page' ],
-				'permission_callback' => [ $this, 'get_page_permissions' ],
-				'show_in_index'       => false,
-				'args'                => [
-					'kind' => [
-						'required'          => true,
-						'type'              => 'string',
-						'enum'              => [ Install::PAGE_CREATE, Install::PAGE_REVEAL ],
-						'sanitize_callback' => 'sanitize_key',
+				[
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => [ $this, 'get_pages' ],
+					'permission_callback' => [ $this, 'get_admin_permissions' ],
+				],
+				[
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => [ $this, 'create_page' ],
+					'permission_callback' => [ $this, 'get_page_permissions' ],
+					'args'                => [
+						'kind' => [
+							'required'          => true,
+							'type'              => 'string',
+							'enum'              => Install::page_kinds(),
+							'sanitize_callback' => 'sanitize_key',
+						],
 					],
 				],
+				'show_in_index' => false,
 			]
 		);
 
@@ -206,6 +213,81 @@ class Settings extends REST_Base {
 	}
 
 	/**
+	 * GET /settings/pages
+	 *
+	 * The state of every page Psst needs, so the Pages screen can show whether
+	 * each one exists, is published, and actually carries the block that makes
+	 * it work. A page can be selected in the settings and still do nothing;
+	 * that is the failure this route is for.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_pages(): \WP_REST_Response {
+		$accounts = Settings_Model::accounts_enabled();
+		$pages    = [];
+
+		foreach ( Install::page_kinds() as $kind ) {
+			$blueprint = Install::page_blueprint( $kind );
+
+			if ( null === $blueprint ) {
+				continue;
+			}
+
+			$setting = Install::setting_for_page( $kind );
+			$page_id = (int) Settings_Model::get( $setting );
+			$post    = $page_id > 0 ? get_post( $page_id ) : null;
+			$is_page = $post instanceof \WP_Post && 'page' === $post->post_type;
+
+			$has_block = $is_page && Install::page_has_block( $page_id, $kind );
+			$status    = $is_page ? (string) $post->post_status : '';
+
+			if ( ! $is_page ) {
+				$state = 'missing';
+			} elseif ( 'publish' !== $status ) {
+				$state = 'unpublished';
+			} elseif ( ! $has_block ) {
+				$state = 'no_block';
+			} else {
+				$state = 'ok';
+			}
+
+			$pages[] = [
+				'kind'      => $kind,
+				'setting'   => $setting,
+				'block'     => $blueprint['block'],
+				'pattern'   => $blueprint['pattern'],
+				'required'  => in_array( $kind, [ Install::PAGE_CREATE, Install::PAGE_REVEAL ], true ),
+
+				/*
+				 * The account pages are reported whatever the setting says, so
+				 * that turning accounts off does not hide pages that exist. They
+				 * are simply marked inactive.
+				 */
+				'active'    => in_array( $kind, [ Install::PAGE_CREATE, Install::PAGE_REVEAL ], true ) || $accounts,
+				'page_id'   => $is_page ? $page_id : 0,
+				'title'     => $is_page ? (string) get_the_title( $page_id ) : '',
+				'slug'      => $is_page ? (string) $post->post_name : '',
+				'status'    => $status,
+				'url'       => $is_page ? (string) get_permalink( $page_id ) : '',
+				'edit_url'  => $is_page ? (string) get_edit_post_link( $page_id, 'raw' ) : '',
+				'has_block' => $has_block,
+				'state'     => $state,
+			];
+		}
+
+		return new \WP_REST_Response(
+			[
+				'pages'            => $pages,
+				'accounts_enabled' => $accounts,
+
+				// The reveal page's slug is the link prefix, so it is worth showing whole.
+				'secret_url'       => home_url( '/' . \Linchpin\Psst\Controller\Rewrites::base() . '/' ),
+			],
+			200
+		);
+	}
+
+	/**
 	 * POST /settings/pages
 	 *
 	 * A fresh published page holding the blocks the kind needs. The setting is
@@ -241,9 +323,14 @@ class Settings extends REST_Base {
 	public function reset_settings(): \WP_REST_Response {
 		$defaults = Settings_Model::defaults();
 
-		// Keep the pages: resetting the numbers should not orphan the routes.
-		$defaults['create_page_id'] = (int) Settings_Model::get( 'create_page_id' );
-		$defaults['reveal_page_id'] = (int) Settings_Model::get( 'reveal_page_id' );
+		/*
+		 * Keep the pages: resetting the numbers should not orphan the routes,
+		 * and it should not leave three account pages published with nothing
+		 * pointing at them either.
+		 */
+		foreach ( [ 'create_page_id', 'reveal_page_id', 'login_page_id', 'register_page_id', 'account_page_id' ] as $page_key ) {
+			$defaults[ $page_key ] = (int) Settings_Model::get( $page_key );
+		}
 
 		Settings_Model::save( $defaults );
 

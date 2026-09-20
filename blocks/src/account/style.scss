@@ -1,0 +1,43 @@
+/**
+ * Structural styles for the account block.
+ */
+
+@use "../shared/account" as account;
+
+.wp-block-psst-account {
+
+	@include account.psst-account-styles;
+	@include account.psst-history-styles;
+
+	/*
+	 * The block stacks a header, a button, a heading and a table, and a block
+	 * theme resets the margins each of those would normally bring. Without this
+	 * the sign-out line and the button underneath it sit flush together.
+	 */
+	> * + * {
+		margin-block-start: var(--psst-gap);
+	}
+
+	.psst-account__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--psst-gap-small);
+	}
+
+	.psst-account__who {
+		margin: 0;
+		color: var(--psst-muted);
+		font-size: var(--wp--preset--font-size--small, 0.9375rem);
+	}
+
+	.psst-account__signout {
+		margin-inline-start: var(--psst-gap-small);
+	}
+
+	.psst-account__empty {
+		margin-block: var(--psst-gap);
+		color: var(--psst-muted);
+	}
+}

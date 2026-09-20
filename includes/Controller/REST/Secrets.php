@@ -11,11 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Linchpin\Psst\Controller\Account\History;
 use Linchpin\Psst\Core\Scheduler;
 use Linchpin\Psst\Helper\Base64Url;
 use Linchpin\Psst\Helper\Ids;
-use Linchpin\Psst\Helper\Rate_Limiter;
-use Linchpin\Psst\Helper\Request_Context;
 use Linchpin\Psst\Helper\Turnstile;
 use Linchpin\Psst\Model\Envelope;
 use Linchpin\Psst\Model\Secret_Repository;
@@ -108,6 +107,18 @@ class Secrets extends REST_Base {
 					],
 					'challenge'      => [
 						'type'              => [ 'string', 'null' ],
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+
+					/*
+					 * A label for the sender's own history: an address, or a
+					 * name, or anything else that will mean something to them
+					 * later. Recorded only for a logged-in sender with history
+					 * switched on, and never part of the envelope.
+					 */
+					'recipient'      => [
+						'type'              => [ 'string', 'null' ],
+						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					],
 				],
@@ -208,6 +219,17 @@ class Secrets extends REST_Base {
 	public function permit_create( \WP_REST_Request $request ): true|\WP_Error {
 		if ( strlen( (string) $request->get_body() ) > self::max_request_bytes() ) {
 			return new \WP_Error( 'psst_payload_too_large', __( 'That secret is larger than this site allows.', 'psst' ), [ 'status' => 413 ] );
+		}
+
+		if ( Settings::require_login_to_create() && ! is_user_logged_in() ) {
+			return new \WP_Error(
+				'psst_login_required',
+				__( 'You need to be signed in to create a secret.', 'psst' ),
+				[
+					'status'    => rest_authorization_required_code(),
+					'login_url' => Settings::get_login_url(),
+				]
+			);
 		}
 
 		$limited = $this->limit( 'create', (int) Settings::get( 'rate_limit_create_per_hour' ) )
@@ -329,6 +351,13 @@ class Secrets extends REST_Base {
 		}
 
 		Scheduler::schedule_expiry( $created->post_id, $created->expires_at );
+
+		/*
+		 * The sender's own record of what they sent. A no-op unless history is
+		 * switched on and the sender is signed in, and metadata-only in any
+		 * case — it is handed the envelope for its byte count and nothing else.
+		 */
+		History::record( $created, $envelope, (string) $request->get_param( 'recipient' ) );
 
 		/**
 		 * Fires after a secret is stored.
@@ -475,94 +504,6 @@ class Secrets extends REST_Base {
 		$format = (string) apply_filters( 'psst_date_time_format', get_option( 'date_format' ) . ' @ ' . get_option( 'time_format' ) );
 
 		return wp_date( $format, $timestamp );
-	}
-
-	/**
-	 * The management token from the header or the body.
-	 *
-	 * @param \WP_REST_Request $request The request.
-	 *
-	 * @return string
-	 */
-	private function presented_token( \WP_REST_Request $request ): string {
-		$header = $request->get_header( 'X-Psst-Manage-Token' );
-
-		if ( is_string( $header ) && '' !== $header ) {
-			return sanitize_text_field( $header );
-		}
-
-		$body = $request->get_param( 'token' );
-
-		return is_string( $body ) ? $body : '';
-	}
-
-	/**
-	 * Count a hit against a per-IP (or global) hourly limit.
-	 *
-	 * @param string      $scope      Scope.
-	 * @param int         $limit      Hits per hour; zero disables.
-	 * @param string|null $identifier Override the identifier, e.g. 'all' for a global bucket.
-	 *
-	 * @return \WP_Error|null
-	 */
-	private function limit( string $scope, int $limit, ?string $identifier = null ): ?\WP_Error {
-		/**
-		 * Filters a rate limit before it is applied.
-		 *
-		 * @param int    $limit Hits per hour.
-		 * @param string $scope The scope.
-		 */
-		$limit = (int) apply_filters( 'psst_rate_limit', $limit, $scope );
-
-		if ( $limit <= 0 ) {
-			return null;
-		}
-
-		$identifier = $identifier ?? $this->client_ip();
-
-		if ( '' === $identifier ) {
-			return null;
-		}
-
-		$retry_after = Rate_Limiter::with_transients()->hit( $scope, $identifier, $limit );
-
-		if ( 0 === $retry_after ) {
-			return null;
-		}
-
-		return new \WP_Error(
-			'psst_rate_limited',
-			__( 'Too many requests. Try again later.', 'psst' ),
-			[
-				'status'      => 429,
-				'retry_after' => $retry_after,
-			]
-		);
-	}
-
-	/**
-	 * The client IP, honoring the configured trusted proxy.
-	 *
-	 * @return string
-	 */
-	private function client_ip(): string {
-		$ip = Request_Context::client_ip( (string) Settings::get( 'trusted_proxy_header' ) );
-
-		/**
-		 * Filters the client IP used for rate limiting.
-		 *
-		 * @param string $ip The resolved address.
-		 */
-		return (string) apply_filters( 'psst_client_ip', $ip );
-	}
-
-	/**
-	 * The one error for every kind of absence.
-	 *
-	 * @return \WP_Error
-	 */
-	private function not_found(): \WP_Error {
-		return new \WP_Error( 'psst_not_found', __( 'This secret is no longer available.', 'psst' ), [ 'status' => 404 ] );
 	}
 
 	/**
