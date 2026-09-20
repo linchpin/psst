@@ -8,6 +8,19 @@
  * src/admin/brand.js.
  */
 
+/*
+ * DataViews ships its own stylesheet, and the Secrets tab is an unreadable
+ * stack of bare table rows without it.
+ *
+ * It has to be pulled in here rather than imported from JavaScript: WordPress
+ * registers no `wp-dataviews` style handle to depend on, and the dependency
+ * extraction plugin rewrites a JS import of anything under `@wordpress/` into
+ * an external handle — which for a stylesheet produces a script dependency
+ * that does not exist. Sass resolves it through node_modules and inlines it,
+ * where that plugin never sees it. Same approach as mantle.
+ */
+@use "@wordpress/dataviews/build-style/style.css";
+
 $psst-tablet: 782px;
 $psst-two-column: 1100px;
 
@@ -138,6 +151,11 @@ $psst-two-column: 1100px;
 		align-items: start;
 
 		@media (max-width: $psst-two-column) {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		// A tab that renders no sidebar, so its content can use the full width.
+		&.is-wide {
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}
@@ -435,6 +453,46 @@ $psst-two-column: 1100px;
 
 		.dataviews-wrapper {
 			min-height: 320px;
+		}
+
+		/*
+		 * The id is the one value on this screen anyone reads character by
+		 * character — it is what they match against a link they were sent — so
+		 * give it a monospace face and keep it on one line.
+		 */
+		.dataviews-view-table code {
+			padding: 2px 6px;
+			border-radius: var(--wpds-border-radius-xs);
+			background: var(--wpds-color-background-surface-neutral-weak);
+			font-family: var(--wpds-typography-font-family-mono);
+			font-size: var(--wpds-typography-font-size-sm);
+			white-space: nowrap;
+		}
+
+		/*
+		 * Narrow enough and the table outgrows even the full width. DataViews
+		 * scrolls it rather than dropping columns, so make that scrollbar a
+		 * visible affordance instead of something the reader has to discover.
+		 */
+		.dataviews-layout__container {
+			scrollbar-width: thin;
+		}
+
+		/*
+		 * DataViews reveals a row's action only on hover or focus, which hides
+		 * the single control this screen exists for. Shredding a secret before
+		 * it is read is the whole reason an administrator opens this tab, and
+		 * with one action per row there is nothing for it to keep out of the
+		 * way of. Same override, and the same reasoning, as mantle's.
+		 *
+		 * Matches DataViews' own specificity (0,4,1) and adds to it; a shorter
+		 * selector loses.
+		 */
+		.dataviews-view-table
+		tr
+		.dataviews-item-actions
+		.components-button:not(.dataviews-all-actions-button) {
+			opacity: 1;
 		}
 	}
 

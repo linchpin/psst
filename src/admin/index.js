@@ -116,10 +116,18 @@ function renderTab( tab ) {
 			view = <SettingsView />;
 	}
 
+	/*
+	 * The secrets table has eight columns and an actions cell. Beside a 300px
+	 * sidebar it has to be scrolled sideways to reach half of them, which is a
+	 * poor trade for a panel of explanatory copy the reader has seen on the
+	 * other three tabs. The table gets the whole width instead.
+	 */
+	const isWide = 'secrets' === tab.name;
+
 	return (
-		<div className="psst-admin__body">
+		<div className={ `psst-admin__body${ isWide ? ' is-wide' : '' }` }>
 			<main className="psst-admin__main">{ view }</main>
-			<Sidebar />
+			{ ! isWide && <Sidebar /> }
 		</div>
 	);
 }
