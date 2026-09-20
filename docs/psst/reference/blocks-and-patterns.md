@@ -61,6 +61,8 @@ These three ship with the optional account layer and render nothing useful until
 | `psst/register-form` | `heading`, `intro`, `showLoginLink` | The registration form, or a "not accepting new accounts" notice when registration is closed in either Psst or WordPress. Carries a honeypot and fires `psst_register_form` before the submit button. |
 | `psst/account` | `heading`, `perPage`, `showSignOut` | A signed-in sender's record of the secrets they have sent, paginated. Prompts a signed-out visitor to sign in. |
 
+Each of these pages is listed on **Settings → Psst → Pages**, which reports whether the page exists, is published, and still carries the block it needs. A page that is selected but has lost its block renders as an ordinary empty page, and that screen is where that shows up.
+
 The form posts to `wp-login.php`, which is the only thing that checks a password. Registration posts back to its own page and is handled on `template_redirect`, deliberately avoiding `admin-post.php` — a site that has just locked wp-admin down should not route account creation through it.
 
 ## Patterns

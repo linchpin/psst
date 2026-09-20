@@ -48,6 +48,31 @@ The remaining toggles are independent:
 - **Record the secrets a signed-in user sends.** The history described above.
 - **Let senders email the link from this site.** Covered below, and read that section before switching it on.
 
+### Trying it locally
+
+The settings screen is the normal route, but a local site is usually quicker to set up from the command line. This turns the whole layer on, including registration, and creates the three pages:
+
+```bash
+wp eval '
+$s = \Linchpin\Psst\Model\Settings::all();
+$s["accounts_enabled"]       = true;   // creates the three pages the first time
+$s["allow_registration"]     = true;
+$s["history_enabled"]        = true;
+$s["block_admin_access"]     = true;   // optional
+$s["email_delivery_enabled"] = false;  // read the section below before enabling
+\Linchpin\Psst\Model\Settings::save( $s );
+'
+
+# WordPress has the final say on registration, so open it too.
+wp option update users_can_register 1
+```
+
+On a WordPress Studio site, prefix those with `studio wp` instead of `wp`.
+
+Then check **Settings → Psst → Pages**. Every page should read *Ready*. That screen is worth knowing about: a page can be selected and still not work — trashed, left as a draft, or edited until its block is gone — and each of those looks identical from a settings dropdown while the feature silently does nothing. The Pages tab reports what is actually true of each page, including whether it still carries the block that makes it work.
+
+To try the lockout, register an account on the front end (it becomes a subscriber) and then visit `/wp-admin/profile.php`. You should land on the account page instead.
+
 ## Signing in
 
 The front end pages do not replace WordPress's authentication; they wrap it. The sign-in form posts to `wp-login.php`, which is the only thing that checks a password. What changes is the routing around it:

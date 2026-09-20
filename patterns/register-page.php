@@ -16,11 +16,8 @@ return [
 	'categories'  => [ 'psst' ],
 	'keywords'    => [ 'psst', 'register', 'sign up', 'account' ],
 	'blockTypes'  => [ 'psst/register-form' ],
+	// No heading of its own; see the note in sign-in-page.php.
 	'content'     => '<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
-<main class="wp-block-group"><!-- wp:heading {"level":1} -->
-<h1 class="wp-block-heading">' . esc_html__( 'Create an account', 'psst' ) . '</h1>
-<!-- /wp:heading -->
-
-<!-- wp:psst/register-form {"heading":""} /--></main>
+<main class="wp-block-group"><!-- wp:psst/register-form {"heading":""} /--></main>
 <!-- /wp:group -->',
 ];

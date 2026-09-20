@@ -16,11 +16,8 @@ return [
 	'categories'  => [ 'psst' ],
 	'keywords'    => [ 'psst', 'account', 'history', 'sent' ],
 	'blockTypes'  => [ 'psst/account' ],
+	// No heading of its own; see the note in sign-in-page.php.
 	'content'     => '<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
-<main class="wp-block-group"><!-- wp:heading {"level":1} -->
-<h1 class="wp-block-heading">' . esc_html__( 'Your account', 'psst' ) . '</h1>
-<!-- /wp:heading -->
-
-<!-- wp:psst/account {"heading":""} /--></main>
+<main class="wp-block-group"><!-- wp:psst/account {"heading":""} /--></main>
 <!-- /wp:group -->',
 ];

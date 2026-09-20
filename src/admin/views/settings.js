@@ -2,9 +2,8 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { useEffect, useMemo, useState } from '@wordpress/element';
-import { useDispatch, useSelect } from '@wordpress/data';
-import { store as coreStore } from '@wordpress/core-data';
+import { useEffect, useState } from '@wordpress/element';
+import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import {
@@ -13,7 +12,6 @@ import {
 	CardBody,
 	CardHeader,
 	CheckboxControl,
-	ComboboxControl,
 	ExternalLink,
 	Flex,
 	FlexItem,
@@ -23,7 +21,6 @@ import {
 	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
-import { plus } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -50,185 +47,6 @@ function Section( { title, description, children } ) {
 			</CardHeader>
 			<CardBody>{ children }</CardBody>
 		</Card>
-	);
-}
-
-/**
- * A page's title, or a placeholder when it has none.
- *
- * @param {Object} page A REST page record.
- * @return {string} Label.
- */
-function pageLabel( page ) {
-	const title = page?.title?.rendered || `#${ page?.id }`;
-
-	// Two pages can share a title (a second "Secret" page, say); the slug is
-	// what tells them apart, and it is also what the share links will show.
-	return page?.slug ? `${ title } (/${ page.slug }/)` : title;
-}
-
-/**
- * Choose a page by searching for it, or make a new one that already holds
- * the blocks this kind of page needs.
- *
- * The search runs on the server: a site with hundreds of pages must not be
- * handed a truncated list to scroll through. The selected page is fetched by
- * id so its title shows whether or not it is in the current results.
- *
- * @param {Object}   props          Props.
- * @param {string}   props.label    Label.
- * @param {string}   props.help     Help text.
- * @param {string}   props.kind     Page kind for the new-page route: 'create',
- *                                  'reveal', 'login', 'register' or 'account'.
- * @param {number}   props.value    Page id.
- * @param {Function} props.onChange Setter.
- * @return {Element} Control.
- */
-function PagePicker( { label, help, kind, value, onChange } ) {
-	const [ search, setSearch ] = useState( '' );
-	const [ results, setResults ] = useState( [] );
-	const [ isSearching, setSearching ] = useState( false );
-	const [ isCreating, setCreating ] = useState( false );
-	const { createSuccessNotice, createErrorNotice } =
-		useDispatch( noticesStore );
-
-	const selected = useSelect(
-		( select ) =>
-			value
-				? select( coreStore ).getEntityRecord(
-						'postType',
-						'page',
-						value,
-						{ _fields: 'id,title,slug' }
-					)
-				: null,
-		[ value ]
-	);
-
-	useEffect( () => {
-		let cancelled = false;
-		setSearching( true );
-
-		const query = new URLSearchParams( {
-			per_page: '20',
-			status: 'publish',
-			orderby: search ? 'relevance' : 'title',
-			order: 'asc',
-			_fields: 'id,title,slug',
-		} );
-
-		if ( search ) {
-			query.set( 'search', search );
-		}
-
-		const timer = setTimeout( () => {
-			apiFetch( { path: `/wp/v2/pages?${ query.toString() }` } )
-				.then( ( pages ) => {
-					if ( ! cancelled ) {
-						setResults( Array.isArray( pages ) ? pages : [] );
-					}
-				} )
-				.catch( () => {
-					if ( ! cancelled ) {
-						setResults( [] );
-					}
-				} )
-				.finally( () => {
-					if ( ! cancelled ) {
-						setSearching( false );
-					}
-				} );
-		}, 250 );
-
-		return () => {
-			cancelled = true;
-			clearTimeout( timer );
-		};
-	}, [ search ] );
-
-	const options = useMemo( () => {
-		const list = results.map( ( page ) => ( {
-			value: String( page.id ),
-			label: pageLabel( page ),
-		} ) );
-
-		if (
-			selected &&
-			! list.some( ( o ) => o.value === String( selected.id ) )
-		) {
-			list.unshift( {
-				value: String( selected.id ),
-				label: pageLabel( selected ),
-			} );
-		}
-
-		return list;
-	}, [ results, selected ] );
-
-	const createPage = async () => {
-		setCreating( true );
-
-		try {
-			const page = await apiFetch( {
-				path: '/psst/v1/settings/pages',
-				method: 'POST',
-				data: { kind },
-			} );
-
-			onChange( Number( page.id ) );
-			createSuccessNotice(
-				__(
-					'Page created and selected. Save settings to start using it.',
-					'psst'
-				),
-				{
-					type: 'snackbar',
-					actions: page.link
-						? [
-								{
-									label: __( 'View page', 'psst' ),
-									url: page.link,
-								},
-							]
-						: [],
-				}
-			);
-		} catch ( err ) {
-			createErrorNotice(
-				err?.message || __( 'The page could not be created.', 'psst' ),
-				{ type: 'snackbar' }
-			);
-		} finally {
-			setCreating( false );
-		}
-	};
-
-	return (
-		<div className="psst-admin__page-picker">
-			<ComboboxControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ label }
-				help={ help }
-				value={ value ? String( value ) : '' }
-				options={ options }
-				isLoading={ isSearching }
-				onFilterValueChange={ setSearch }
-				onChange={ ( next ) => onChange( next ? Number( next ) : 0 ) }
-				placeholder={ __( 'Search pages…', 'psst' ) }
-				allowReset
-			/>
-			<Button
-				__next40pxDefaultSize
-				variant="tertiary"
-				icon={ plus }
-				isBusy={ isCreating }
-				disabled={ isCreating }
-				onClick={ createPage }
-			>
-				{ __( 'Create a new page', 'psst' ) }
-			</Button>
-		</div>
 	);
 }
 
@@ -409,41 +227,6 @@ export default function SettingsView() {
 
 	return (
 		<div className="psst-admin__view">
-			<Section
-				title={ __( 'Pages', 'psst' ) }
-				description={ __(
-					'Secret links point at the viewer page; the form lives on the create page. Both were created on activation and can be changed here.',
-					'psst'
-				) }
-			>
-				<Flex gap={ 4 } wrap>
-					<FlexItem isBlock>
-						<PagePicker
-							kind="create"
-							label={ __( 'Create page', 'psst' ) }
-							help={ __(
-								'The page holding the Secret Form block. "Create a new secret" links go here.',
-								'psst'
-							) }
-							value={ draft.create_page_id }
-							onChange={ set( 'create_page_id' ) }
-						/>
-					</FlexItem>
-					<FlexItem isBlock>
-						<PagePicker
-							kind="reveal"
-							label={ __( 'Viewer page', 'psst' ) }
-							help={ __(
-								'The page holding the Secret Viewer block. Its slug becomes the link prefix, so keep it short.',
-								'psst'
-							) }
-							value={ draft.reveal_page_id }
-							onChange={ set( 'reveal_page_id' ) }
-						/>
-					</FlexItem>
-				</Flex>
-			</Section>
-
 			<Section
 				title={ __( 'Expiration', 'psst' ) }
 				description={ __(
@@ -641,47 +424,12 @@ export default function SettingsView() {
 
 				{ !! draft.accounts_enabled && (
 					<>
-						<Flex gap={ 4 } wrap align="flex-start">
-							<FlexItem isBlock>
-								<PagePicker
-									kind="login"
-									label={ __( 'Sign in page', 'psst' ) }
-									help={ __(
-										'Holds the Sign In Form block. wp-login.php redirects here.',
-										'psst'
-									) }
-									value={ draft.login_page_id }
-									onChange={ set( 'login_page_id' ) }
-								/>
-							</FlexItem>
-							<FlexItem isBlock>
-								<PagePicker
-									kind="register"
-									label={ __(
-										'Create account page',
-										'psst'
-									) }
-									help={ __(
-										'Holds the Create Account Form block.',
-										'psst'
-									) }
-									value={ draft.register_page_id }
-									onChange={ set( 'register_page_id' ) }
-								/>
-							</FlexItem>
-							<FlexItem isBlock>
-								<PagePicker
-									kind="account"
-									label={ __( 'Account page', 'psst' ) }
-									help={ __(
-										'Holds the Account block, where a signed-in user sees what they have sent.',
-										'psst'
-									) }
-									value={ draft.account_page_id }
-									onChange={ set( 'account_page_id' ) }
-								/>
-							</FlexItem>
-						</Flex>
+						<p className="psst-admin__hint">
+							{ __(
+								'The sign in, create account and account pages are managed on the Pages tab, along with the create and viewer pages.',
+								'psst'
+							) }
+						</p>
 
 						<ToggleControl
 							__nextHasNoMarginBottom

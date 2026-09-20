@@ -278,6 +278,53 @@ $psst-two-column: 1100px;
 		}
 	}
 
+	/* A page that is set up but not currently in use, because accounts are off. */
+	&__page-card.is-inactive {
+		opacity: 0.75;
+	}
+
+	&__page-links {
+		font-size: var(--wpds-typography-font-size-sm);
+	}
+
+	&__page-url {
+		display: inline-block;
+		padding: 2px 6px;
+		border-radius: var(--wpds-border-radius-xs);
+		background: var(--wpds-color-background-surface-neutral-weak);
+		font-family: var(--wpds-typography-font-family-mono);
+		font-size: var(--wpds-typography-font-size-sm);
+		word-break: break-all;
+	}
+
+	&__badge {
+		display: inline-block;
+		margin-left: 8px;
+		padding: 2px 8px;
+		border-radius: 999px;
+		font-size: var(--wpds-typography-font-size-xs);
+		font-weight: var(--wpds-typography-font-weight-emphasis);
+		line-height: 1.6;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		vertical-align: middle;
+
+		&.is-ok {
+			background: var(--wpds-color-background-surface-success-weak);
+			color: var(--wpds-color-foreground-content-success);
+		}
+
+		&.is-warning {
+			background: var(--wpds-color-background-surface-warning-weak);
+			color: var(--wpds-color-foreground-content-warning);
+		}
+
+		&.is-problem {
+			background: var(--wpds-color-background-surface-error-weak);
+			color: var(--wpds-color-foreground-content-error);
+		}
+	}
+
 	&__constants {
 		display: flex;
 		flex-direction: column;

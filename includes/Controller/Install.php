@@ -220,9 +220,13 @@ class Install implements Controller_Interface {
 	/**
 	 * What a page of each kind is made of.
 	 *
+	 * `block` is what the page has to contain to do its job, and `pattern` is
+	 * the pattern that supplies it. Both are here so the Pages screen can tell
+	 * a page that will work from one that is merely selected.
+	 *
 	 * @param string $kind One of the PAGE_* constants.
 	 *
-	 * @return array{title: string, slug: string, content: string}|null Null for an unknown kind.
+	 * @return array{title: string, slug: string, content: string, block: string, pattern: string}|null Null for an unknown kind.
 	 */
 	public static function page_blueprint( string $kind ): ?array {
 		switch ( $kind ) {
@@ -231,6 +235,8 @@ class Install implements Controller_Interface {
 					'title'   => _x( 'Secret', 'reveal page title', 'psst' ),
 					'slug'    => 's',
 					'content' => '<!-- wp:psst/secret-viewer /-->',
+					'block'   => 'psst/secret-viewer',
+					'pattern' => '',
 				];
 
 			case self::PAGE_CREATE:
@@ -238,6 +244,8 @@ class Install implements Controller_Interface {
 					'title'   => _x( 'Share a Secret', 'create page title', 'psst' ),
 					'slug'    => 'share',
 					'content' => '<!-- wp:pattern {"slug":"psst/create-page"} /-->',
+					'block'   => 'psst/secret-form',
+					'pattern' => 'psst/create-page',
 				];
 
 			case self::PAGE_LOGIN:
@@ -245,6 +253,8 @@ class Install implements Controller_Interface {
 					'title'   => _x( 'Sign In', 'login page title', 'psst' ),
 					'slug'    => 'sign-in',
 					'content' => '<!-- wp:pattern {"slug":"psst/sign-in-page"} /-->',
+					'block'   => 'psst/login-form',
+					'pattern' => 'psst/sign-in-page',
 				];
 
 			case self::PAGE_REGISTER:
@@ -252,6 +262,8 @@ class Install implements Controller_Interface {
 					'title'   => _x( 'Create an Account', 'register page title', 'psst' ),
 					'slug'    => 'register',
 					'content' => '<!-- wp:pattern {"slug":"psst/register-page"} /-->',
+					'block'   => 'psst/register-form',
+					'pattern' => 'psst/register-page',
 				];
 
 			case self::PAGE_ACCOUNT:
@@ -259,10 +271,76 @@ class Install implements Controller_Interface {
 					'title'   => _x( 'Your Account', 'account page title', 'psst' ),
 					'slug'    => 'account',
 					'content' => '<!-- wp:pattern {"slug":"psst/account-page"} /-->',
+					'block'   => 'psst/account',
+					'pattern' => 'psst/account-page',
 				];
 		}
 
 		return null;
+	}
+
+	/**
+	 * Every page kind, in the order the Pages screen shows them.
+	 *
+	 * @return string[]
+	 */
+	public static function page_kinds(): array {
+		return [ self::PAGE_CREATE, self::PAGE_REVEAL, self::PAGE_LOGIN, self::PAGE_REGISTER, self::PAGE_ACCOUNT ];
+	}
+
+	/**
+	 * Whether a page carries the block its job needs.
+	 *
+	 * A page can be selected in the settings and still do nothing, which is the
+	 * failure this answers. The block may be there directly, or supplied by the
+	 * pattern the page was created with — a freshly created page holds only a
+	 * `core/pattern` reference, so looking for the block alone would report
+	 * every untouched page as broken.
+	 *
+	 * @param int    $page_id The page.
+	 * @param string $kind    One of the PAGE_* constants.
+	 *
+	 * @return bool
+	 */
+	public static function page_has_block( int $page_id, string $kind ): bool {
+		$blueprint = self::page_blueprint( $kind );
+		$post      = $page_id > 0 ? get_post( $page_id ) : null;
+
+		if ( null === $blueprint || ! ( $post instanceof \WP_Post ) ) {
+			return false;
+		}
+
+		if ( has_block( $blueprint['block'], $post ) ) {
+			return true;
+		}
+
+		if ( '' === $blueprint['pattern'] ) {
+			return false;
+		}
+
+		return self::references_pattern( parse_blocks( (string) $post->post_content ), $blueprint['pattern'] );
+	}
+
+	/**
+	 * Whether a parsed block tree contains a reference to a given pattern.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param string                           $slug   The pattern slug.
+	 *
+	 * @return bool
+	 */
+	private static function references_pattern( array $blocks, string $slug ): bool {
+		foreach ( $blocks as $block ) {
+			if ( 'core/pattern' === ( $block['blockName'] ?? '' ) && ( $block['attrs']['slug'] ?? '' ) === $slug ) {
+				return true;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && self::references_pattern( (array) $block['innerBlocks'], $slug ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

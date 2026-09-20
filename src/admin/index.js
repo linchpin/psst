@@ -26,6 +26,7 @@ import Sidebar from './components/sidebar';
 import Footer from './components/footer';
 import Notices from './components/notices';
 import SettingsView from './views/settings';
+import PagesView from './views/pages';
 import SecretsView from './views/secrets';
 import HealthView from './views/health';
 
@@ -43,6 +44,11 @@ const TABS = [
 	{
 		name: 'settings',
 		title: __( 'Settings', 'psst' ),
+		className: 'psst-admin__tab',
+	},
+	{
+		name: 'pages',
+		title: __( 'Pages', 'psst' ),
 		className: 'psst-admin__tab',
 	},
 	{
@@ -97,6 +103,9 @@ function renderTab( tab ) {
 	let view;
 
 	switch ( tab.name ) {
+		case 'pages':
+			view = <PagesView />;
+			break;
 		case 'secrets':
 			view = <SecretsView />;
 			break;
