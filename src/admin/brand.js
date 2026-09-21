@@ -1,46 +1,34 @@
 /**
- * Psst's brand, in one place.
+ * Psst's brand and links, in one place.
  *
- * The colours come from the plugin's own artwork: the mint and violet are the
- * two fills in logos/psst.svg, the deep green is the right-hand stop of the
- * WordPress.org icon's gradient, and the primary seed is the midpoint of that
- * gradient. The ThemeProvider derives the rest of the design system's colour
- * ramps from `primary`; the SCSS reads the others as `--psst-brand-*` custom
- * properties that the shell sets from this object, so there is exactly one
- * source to change.
+ * Both come from @linchpinagency/ui, so this file names what is Psst's and
+ * nothing else. `defineBrand()` turns the three colours into the
+ * `--lp-brand-*` custom properties the chrome paints with, and seeds the
+ * design system from `primary` — every button, tab and card icon on the
+ * screen follows it without being told. `linchpinLinks()` builds the four
+ * links every Linchpin admin screen carries, with the UTM parameters the
+ * agency site reads.
  */
-export const BRAND = {
+
+/**
+ * External dependencies
+ */
+import { defineBrand, linchpinLinks } from '@linchpinagency/ui';
+
+/**
+ * The colours come from the plugin's own artwork: the deep green is the
+ * left-hand stop of the WordPress.org icon's gradient and `deepEnd` its
+ * right, and the primary seed is the midpoint between them. The mint and
+ * violet in logos/psst.svg are the mark's own and stay in the artwork.
+ */
+export const BRAND = defineBrand( {
 	primary: '#318873',
-	mint: '#5beece',
-	violet: '#6d3efb',
 	deep: '#082318',
-};
+	deepEnd: '#164a3b',
+} );
 
 /**
- * Where the marketing links go. UTM parameters mirror linchpin-blocks so the
- * agency site can tell which plugin sent a visitor.
+ * `linchpin/psst` and `sayhi@linchpin.com` are the defaults, so the slug is
+ * the only thing this has to say.
  */
-const CAMPAIGN = 'utm_source=psst&utm_medium=plugin&utm_campaign=admin';
-
-export const LINKS = {
-	linchpin: `https://linchpin.com/?${ CAMPAIGN }`,
-	github: 'https://github.com/linchpin/psst',
-	issues: 'https://github.com/linchpin/psst/issues',
-	readme: 'https://github.com/linchpin/psst#readme',
-	support: 'mailto:sayhi@linchpin.com',
-	supportEmail: 'sayhi@linchpin.com',
-};
-
-/**
- * The `--psst-brand-*` custom properties, ready for a `style` prop.
- *
- * @return {Object} CSS custom properties keyed by name.
- */
-export function brandStyle() {
-	return Object.fromEntries(
-		Object.entries( BRAND ).map( ( [ name, value ] ) => [
-			`--psst-brand-${ name }`,
-			value,
-		] )
-	);
-}
+export const LINKS = linchpinLinks( { plugin: 'psst' } );

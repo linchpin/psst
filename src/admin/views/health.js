@@ -3,13 +3,12 @@
  */
 import { __ } from '@wordpress/i18n';
 import { dateI18n, getSettings as getDateSettings } from '@wordpress/date';
-import {
-	Card,
-	CardBody,
-	ExternalLink,
-	Notice,
-	Spinner,
-} from '@wordpress/components';
+import { ExternalLink, Notice, Spinner } from '@wordpress/components';
+
+/**
+ * External dependencies
+ */
+import { SettingsCard } from '@linchpinagency/ui';
 
 /**
  * Internal dependencies
@@ -63,104 +62,94 @@ export default function HealthView() {
 	}`;
 
 	return (
-		<div className="psst-admin__view">
-			<Card className="psst-admin__section">
-				<CardBody>
-					<dl className="psst-admin__health">
-						<Row
-							label={ __( 'Action Scheduler', 'psst' ) }
-							status={ data.actionScheduler ? 'ok' : 'warn' }
-							value={
-								data.actionScheduler
-									? __(
-											'Available. Secrets expire on schedule.',
-											'psst'
-										)
-									: __(
-											'Not loaded. Expiry falls back to WP-Cron and read-time checks.',
-											'psst'
-										)
-							}
-						/>
-						<Row
-							label={ __( 'Next sweep', 'psst' ) }
-							status={ data.nextSweep ? 'ok' : 'warn' }
-							value={
-								data.nextSweep
-									? dateI18n( format, data.nextSweep )
-									: __( 'Not scheduled yet.', 'psst' )
-							}
-						/>
-						<Row
-							label={ __( 'Active secrets', 'psst' ) }
-							value={ String( data.activeSecrets ) }
-						/>
-						<Row
-							label={ __( 'WP-Cron', 'psst' ) }
-							status={ data.cronDisabled ? 'warn' : 'ok' }
-							value={
-								data.cronDisabled
-									? __(
-											'DISABLE_WP_CRON is set. Make sure a system cron runs wp-cron.php or wp action-scheduler run.',
-											'psst'
-										)
-									: __( 'Enabled.', 'psst' )
-							}
-						/>
-						<Row
-							label={ __( 'Turnstile', 'psst' ) }
-							value={
-								data.turnstileEnabled
-									? __(
-											'Enabled on the create form.',
-											'psst'
-										)
-									: __( 'Off.', 'psst' )
-							}
-						/>
-						<Row
-							label={ __( 'Legacy 1.x data', 'psst' ) }
-							status={ data.legacyRemaining ? 'warn' : 'ok' }
-							value={
-								data.legacyRemaining
-									? __(
-											'Still being purged in the background.',
-											'psst'
-										)
-									: __( 'None.', 'psst' )
-							}
-						/>
-						<Row
-							label={ __( 'Create page', 'psst' ) }
-							value={
-								<ExternalLink href={ data.createUrl }>
-									{ data.createUrl }
-								</ExternalLink>
-							}
-						/>
-						<Row
-							label={ __( 'Viewer page', 'psst' ) }
-							status={ data.revealUrl ? 'ok' : 'warn' }
-							value={
-								data.revealUrl ? (
-									<ExternalLink href={ data.revealUrl }>
-										{ data.revealUrl }
-									</ExternalLink>
-								) : (
-									__(
-										'Not set. Secret links will not resolve.',
-										'psst'
-									)
+		<SettingsCard>
+			<dl className="psst-admin__health">
+				<Row
+					label={ __( 'Action Scheduler', 'psst' ) }
+					status={ data.actionScheduler ? 'ok' : 'warn' }
+					value={
+						data.actionScheduler
+							? __(
+									'Available. Secrets expire on schedule.',
+									'psst'
 								)
-							}
-						/>
-						<Row
-							label={ __( 'Version', 'psst' ) }
-							value={ data.version }
-						/>
-					</dl>
-				</CardBody>
-			</Card>
-		</div>
+							: __(
+									'Not loaded. Expiry falls back to WP-Cron and read-time checks.',
+									'psst'
+								)
+					}
+				/>
+				<Row
+					label={ __( 'Next sweep', 'psst' ) }
+					status={ data.nextSweep ? 'ok' : 'warn' }
+					value={
+						data.nextSweep
+							? dateI18n( format, data.nextSweep )
+							: __( 'Not scheduled yet.', 'psst' )
+					}
+				/>
+				<Row
+					label={ __( 'Active secrets', 'psst' ) }
+					value={ String( data.activeSecrets ) }
+				/>
+				<Row
+					label={ __( 'WP-Cron', 'psst' ) }
+					status={ data.cronDisabled ? 'warn' : 'ok' }
+					value={
+						data.cronDisabled
+							? __(
+									'DISABLE_WP_CRON is set. Make sure a system cron runs wp-cron.php or wp action-scheduler run.',
+									'psst'
+								)
+							: __( 'Enabled.', 'psst' )
+					}
+				/>
+				<Row
+					label={ __( 'Turnstile', 'psst' ) }
+					value={
+						data.turnstileEnabled
+							? __( 'Enabled on the create form.', 'psst' )
+							: __( 'Off.', 'psst' )
+					}
+				/>
+				<Row
+					label={ __( 'Legacy 1.x data', 'psst' ) }
+					status={ data.legacyRemaining ? 'warn' : 'ok' }
+					value={
+						data.legacyRemaining
+							? __(
+									'Still being purged in the background.',
+									'psst'
+								)
+							: __( 'None.', 'psst' )
+					}
+				/>
+				<Row
+					label={ __( 'Create page', 'psst' ) }
+					value={
+						<ExternalLink href={ data.createUrl }>
+							{ data.createUrl }
+						</ExternalLink>
+					}
+				/>
+				<Row
+					label={ __( 'Viewer page', 'psst' ) }
+					status={ data.revealUrl ? 'ok' : 'warn' }
+					value={
+						data.revealUrl ? (
+							<ExternalLink href={ data.revealUrl }>
+								{ data.revealUrl }
+							</ExternalLink>
+						) : (
+							__(
+								'Not set. Secret links will not resolve.',
+								'psst'
+							)
+						)
+					}
+				/>
+				<Row label={ __( 'Version', 'psst' ) } value={ data.version } />
+			</dl>
+		</SettingsCard>
 	);
 }

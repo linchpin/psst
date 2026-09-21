@@ -16,6 +16,12 @@ Requires PHP 8.3, Composer, and Node 24.13 or later.
 
 `install:all` runs `npm install` in the root and in `blocks/`. `build:all` builds the admin app and then the blocks. Use `npm run start` or `npm run start:blocks` for a watch build of either project.
 
+## The admin chrome
+
+Everything around the four views — the brand bar, the page header and its section links, the two-column body, the help column and the footer — comes from [`@linchpinagency/ui`](https://github.com/linchpin/ui). Its `@wordpress/*` imports are peer dependencies, which this project already has; `@wordpress/admin-ui` is there for the library's `Page` wrapper and is bundled rather than mapped to a `wp.*` global.
+
+Its compiled stylesheet is imported from `src/admin/index.js` and lands in `build/admin.css` ahead of Psst's own rules, which is the order the overrides in `src/scss/admin.scss` assume.
+
 ## Scripts
 
 <!-- wp:docspress/code-tabs {"tabs":[{"label":"npm","language":"bash","filename":"Terminal","code":"npm run build          # admin app\nnpm run build:blocks   # the two blocks\nnpm run build:all      # both\nnpm run start          # watch the admin app\nnpm run start:blocks   # watch the blocks\nnpm run lint:js\nnpm run lint:css\nnpm run format\nnpm run test:unit      # crypto vectors under Node\nnpm run playground:start\nnpm run test:e2e"},{"label":"composer","language":"bash","filename":"Terminal","code":"composer php-lint      # parallel-lint\ncomposer phpcs         # coding standards, whole tree\ncomposer phpcbf        # auto-fix\ncomposer phpstan\ncomposer fixer:test    # php-cs-fixer dry run\ncomposer lint          # every static gate\ncomposer phpunit       # unit suite, no WordPress\ncomposer test          # lint then phpunit\ncomposer build         # scripts/build.sh"}],"showLineNumbers":false,"caption":"The composer scripts are the ones CI calls through linchpin/actions."} /-->

@@ -18,15 +18,18 @@ import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	Button,
-	Card,
-	CardBody,
-	CardHeader,
 	ExternalLink,
 	Flex,
 	FlexItem,
 	Notice,
 	Spinner,
+	ToggleControl,
 } from '@wordpress/components';
+
+/**
+ * External dependencies
+ */
+import { SettingsCard } from '@linchpinagency/ui';
 
 /**
  * Internal dependencies
@@ -40,6 +43,8 @@ import PagePicker from '../components/page-picker';
  * Kept here rather than sent from the server because it is copy, not data. The
  * server reports what is true; this describes what each page is for.
  */
+const CORE_KINDS = [ 'create', 'reveal' ];
+
 const COPY = {
 	create: {
 		label: __( 'Create page', 'psst' ),
@@ -173,84 +178,80 @@ function PageProblem( { page } ) {
 /**
  * One page slot.
  *
+ * A page the accounts switch has turned off keeps its heading and its badge
+ * — it is still one of the pages Psst has — but loses its controls. There is
+ * nothing to decide about a page that is not in use, and three cards of
+ * unusable inputs, each repeating why they were unusable, was most of the
+ * screen.
+ *
  * @param {Object}   props          Props.
  * @param {Object}   props.page     A page row from the REST payload.
+ * @param {boolean}  props.isActive Whether the draft has this page in use.
  * @param {number}   props.value    The page id in the unsaved draft.
  * @param {Function} props.onChange Setter.
  * @return {Element} Card.
  */
-function PageCard( { page, value, onChange } ) {
+function PageCard( { page, isActive, value, onChange } ) {
 	const copy = COPY[ page.kind ] || { label: page.kind, help: '' };
 
 	return (
-		<Card
-			className={ `psst-admin__section psst-admin__page-card${
-				page.active ? '' : ' is-inactive'
-			}` }
+		<SettingsCard
+			className={ `psst-admin__page-card${ isActive ? '' : ' is-inactive' }` }
+			title={
+				<>
+					{ copy.label } <PageStatus page={ page } />
+				</>
+			}
+			description={ copy.help }
 		>
-			<CardHeader>
-				<div>
-					<h2>
-						{ copy.label } <PageStatus page={ page } />
-					</h2>
-					<p>{ copy.help }</p>
-				</div>
-			</CardHeader>
-			<CardBody>
-				{ ! page.active && (
-					<Notice status="info" isDismissible={ false }>
-						{ __(
-							'Front end accounts are switched off, so this page is not in use. It is shown here so you can set it up before turning them on.',
+			{ isActive && (
+				<>
+					<PageProblem page={ page } />
+
+					<PagePicker
+						kind={ page.kind }
+						label={ __( 'Page', 'psst' ) }
+						help={ __(
+							'Search for an existing page, or create one that already has the right blocks in it.',
 							'psst'
 						) }
-					</Notice>
-				) }
+						value={ value }
+						onChange={ onChange }
+					/>
 
-				<PageProblem page={ page } />
-
-				<PagePicker
-					kind={ page.kind }
-					label={ __( 'Page', 'psst' ) }
-					help={ __(
-						'Search for an existing page, or create one that already has the right blocks in it.',
-						'psst'
+					{ page.page_id > 0 && (
+						<Flex
+							className="psst-admin__page-links"
+							justify="flex-start"
+							gap={ 3 }
+							wrap
+						>
+							{ page.url && (
+								<FlexItem>
+									<ExternalLink href={ page.url }>
+										{ __( 'View', 'psst' ) }
+									</ExternalLink>
+								</FlexItem>
+							) }
+							{ page.edit_url && (
+								<FlexItem>
+									<ExternalLink href={ page.edit_url }>
+										{ __( 'Edit', 'psst' ) }
+									</ExternalLink>
+								</FlexItem>
+							) }
+							{ page.url && (
+								<FlexItem>
+									<code className="psst-admin__page-url">
+										{ page.url }
+									</code>
+								</FlexItem>
+							) }
+						</Flex>
 					) }
-					value={ value }
-					onChange={ onChange }
-				/>
-
-				{ page.page_id > 0 && (
-					<Flex
-						className="psst-admin__page-links"
-						justify="flex-start"
-						gap={ 3 }
-						wrap
-					>
-						{ page.url && (
-							<FlexItem>
-								<ExternalLink href={ page.url }>
-									{ __( 'View', 'psst' ) }
-								</ExternalLink>
-							</FlexItem>
-						) }
-						{ page.edit_url && (
-							<FlexItem>
-								<ExternalLink href={ page.edit_url }>
-									{ __( 'Edit', 'psst' ) }
-								</ExternalLink>
-							</FlexItem>
-						) }
-						{ page.url && (
-							<FlexItem>
-								<code className="psst-admin__page-url">
-									{ page.url }
-								</code>
-							</FlexItem>
-						) }
-					</Flex>
-				) }
-			</CardBody>
-		</Card>
+				</>
+			) }
+		</SettingsCard>
 	);
 }
 
@@ -270,11 +271,12 @@ export default function PagesView() {
 
 	useEffect( () => {
 		if ( data?.pages ) {
-			setDraft(
-				Object.fromEntries(
+			setDraft( {
+				...Object.fromEntries(
 					data.pages.map( ( page ) => [ page.setting, page.page_id ] )
-				)
-			);
+				),
+				accounts_enabled: !! data.accounts_enabled,
+			} );
 		}
 	}, [ data ] );
 
@@ -296,12 +298,21 @@ export default function PagesView() {
 		);
 	}
 
-	const isDirty = data.pages.some(
-		( page ) => draft[ page.setting ] !== page.page_id
-	);
+	const accountsOn = !! draft.accounts_enabled;
+
+	/*
+	 * Whether a page is in use follows the draft switch, not the `active` the
+	 * server sent, so turning accounts on reveals the three pages and counts
+	 * their problems immediately rather than after a save.
+	 */
+	const isActive = ( page ) => CORE_KINDS.includes( page.kind ) || accountsOn;
+
+	const isDirty =
+		accountsOn !== !! data.accounts_enabled ||
+		data.pages.some( ( page ) => draft[ page.setting ] !== page.page_id );
 
 	const problems = data.pages.filter(
-		( page ) => page.active && page.state !== 'ok'
+		( page ) => isActive( page ) && page.state !== 'ok'
 	);
 
 	const save = async () => {
@@ -335,7 +346,7 @@ export default function PagesView() {
 	};
 
 	return (
-		<div className="psst-admin__view">
+		<>
 			{ problems.length > 0 && (
 				<Notice status="warning" isDismissible={ false }>
 					{ sprintf(
@@ -351,38 +362,88 @@ export default function PagesView() {
 				</Notice>
 			) }
 
-			{ data.pages.map( ( page ) => (
-				<PageCard
-					key={ page.kind }
-					page={ page }
-					value={ draft[ page.setting ] }
+			{ data.pages
+				.filter( ( page ) => CORE_KINDS.includes( page.kind ) )
+				.map( ( page ) => (
+					<PageCard
+						key={ page.kind }
+						page={ page }
+						isActive
+						value={ draft[ page.setting ] }
+						onChange={ ( next ) =>
+							setDraft( ( current ) => ( {
+								...current,
+								[ page.setting ]: next,
+							} ) )
+						}
+					/>
+				) ) }
+
+			{ /*
+			 * The same setting as the one on the Settings section, shown
+			 * again here because this is where its three pages are. Deciding
+			 * whether to run accounts and setting up the pages they need is
+			 * one job, and it was split across two sections.
+			 */ }
+			<SettingsCard
+				title={ __( 'Front end accounts', 'psst' ) }
+				description={ __(
+					'Sign in, registration and account pages. The same switch as the one on the Settings section.',
+					'psst'
+				) }
+			>
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __( 'Enable front end accounts', 'psst' ) }
+					help={
+						accountsOn
+							? __(
+									'The three pages below are in use. Each one needs a published page with its block on it.',
+									'psst'
+								)
+							: __(
+									'The three pages below are not in use, so there is nothing to set on them. Turning this on for the first time creates them.',
+									'psst'
+								)
+					}
+					checked={ accountsOn }
 					onChange={ ( next ) =>
 						setDraft( ( current ) => ( {
 							...current,
-							[ page.setting ]: next,
+							accounts_enabled: next,
 						} ) )
 					}
 				/>
-			) ) }
+			</SettingsCard>
 
-			<Card className="psst-admin__section">
-				<CardHeader>
-					<div>
-						<h2>{ __( 'Secret links', 'psst' ) }</h2>
-						<p>
-							{ __(
-								'Built from the viewer page slug. Changing that page changes every future link; links already shared keep working only while the old slug still resolves.',
-								'psst'
-							) }
-						</p>
-					</div>
-				</CardHeader>
-				<CardBody>
-					<code className="psst-admin__page-url">
-						{ `${ data.secret_url }{id}/` }
-					</code>
-				</CardBody>
-			</Card>
+			{ data.pages
+				.filter( ( page ) => ! CORE_KINDS.includes( page.kind ) )
+				.map( ( page ) => (
+					<PageCard
+						key={ page.kind }
+						page={ page }
+						isActive={ accountsOn }
+						value={ draft[ page.setting ] }
+						onChange={ ( next ) =>
+							setDraft( ( current ) => ( {
+								...current,
+								[ page.setting ]: next,
+							} ) )
+						}
+					/>
+				) ) }
+
+			<SettingsCard
+				title={ __( 'Secret links', 'psst' ) }
+				description={ __(
+					'Built from the viewer page slug. Changing that page changes every future link; links already shared keep working only while the old slug still resolves.',
+					'psst'
+				) }
+			>
+				<code className="psst-admin__page-url">
+					{ `${ data.secret_url }{id}/` }
+				</code>
+			</SettingsCard>
 
 			<Flex
 				className="psst-admin__actions"
@@ -404,6 +465,6 @@ export default function PagesView() {
 					</span>
 				) }
 			</Flex>
-		</div>
+		</>
 	);
 }

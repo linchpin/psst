@@ -140,7 +140,8 @@ Builds the distributable `build/psst.zip`.
 * **Protocol** in one file, `blocks/src/shared/crypto.js`, validated server-side by
   `Model\Envelope`
 * **REST API** in the `psst/v1` namespace, hidden from the index
-* **Admin app** under `src/admin/`, React with WordPress components and DataViews
+* **Admin app** under `src/admin/`, React with WordPress components and DataViews, wrapped in
+  the Linchpin admin chrome from [`@linchpinagency/ui`](https://github.com/linchpin/ui)
 
 ## Documentation
 

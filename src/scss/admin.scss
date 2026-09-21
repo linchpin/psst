@@ -1,16 +1,22 @@
 /**
- * The Psst admin app.
+ * What is left of the Psst admin screen once @linchpinagency/ui owns the
+ * chrome.
  *
- * Layout and brand chrome only; components come from @wordpress/components and
- * every colour that is not the brand itself is a design-system token, so the
- * ThemeProvider seed in src/admin/index.js flows through the whole screen.
- * The `--psst-brand-*` custom properties are set on the frame from
- * src/admin/brand.js.
+ * The brand bar, the page panel, the two-column body, the help column, the
+ * settings cards, the snackbars, the footer and the danger zone are all the
+ * library's, and `--lp-brand-*` comes
+ * from the `defineBrand()` call in src/admin/brand.js. What remains here is
+ * Psst's own furniture: the page picker, the page cards' status badges, the
+ * Turnstile snippet, the health table and the secrets list. Every colour is a
+ * `--wpds-*` design-system token, so the brand seed flows through these too.
+ *
+ * The library's stylesheet is imported first, from src/admin/index.js, and
+ * both land in build/admin.css behind `wp-components`.
  */
 
 /*
- * DataViews ships its own stylesheet, and the Secrets tab is an unreadable
- * stack of bare table rows without it.
+ * DataViews ships its own stylesheet, and the Secrets section is an
+ * unreadable stack of bare table rows without it.
  *
  * It has to be pulled in here rather than imported from JavaScript: WordPress
  * registers no `wp-dataviews` style handle to depend on, and the dependency
@@ -21,246 +27,7 @@
  */
 @use "@wordpress/dataviews/build-style/style.css";
 
-$psst-tablet: 782px;
-$psst-two-column: 1100px;
-
 .psst-admin {
-	// wp-admin pads #wpcontent by 20px (10px on small screens). Pull the frame
-	// back so the brand bar runs edge to edge, the way linchpin-blocks and
-	// Mantle do, then restore the gutter inside the shell.
-	margin: 0 0 0 -20px;
-
-	@media (max-width: $psst-tablet) {
-		margin-left: -10px;
-	}
-
-	&__topbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--wpds-dimension-gap-lg);
-		min-height: 56px;
-		padding: 0 20px;
-		background: linear-gradient(90deg, var(--psst-brand-deep) 0%, #164a3b 100%);
-		color: #fff;
-
-		@media (max-width: $psst-tablet) {
-			padding: 0 10px;
-		}
-	}
-
-	&__topbar-brand,
-	&__topbar-meta {
-		display: flex;
-		align-items: center;
-		gap: var(--wpds-dimension-gap-lg);
-	}
-
-	&__topbar-logo {
-		display: block;
-		height: 36px;
-		width: auto;
-	}
-
-	&__topbar-version {
-		padding: 2px 10px;
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.14);
-		color: #fff;
-		font-size: var(--wpds-typography-font-size-xs);
-		font-weight: var(--wpds-typography-font-weight-emphasis);
-		letter-spacing: 0.02em;
-	}
-
-	&__topbar-linchpin {
-		display: inline-flex;
-		align-items: center;
-		color: #fff;
-		border-radius: var(--wpds-border-radius-xs);
-
-		svg {
-			display: block;
-			height: 22px;
-			width: auto;
-		}
-
-		&:focus {
-			box-shadow: none;
-		}
-
-		&:focus-visible {
-			outline: var(--wpds-border-width-focus) solid #fff;
-			outline-offset: 4px;
-		}
-	}
-
-	&__shell {
-		max-width: 1240px;
-		padding: 0 20px;
-
-		@media (max-width: $psst-tablet) {
-			padding: 0 10px;
-		}
-	}
-
-	&__masthead {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: var(--wpds-dimension-gap-lg);
-		padding: 28px 0 12px;
-	}
-
-	&__masthead-copy {
-		min-width: 0;
-	}
-
-	&__masthead-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--wpds-dimension-gap-sm);
-	}
-
-	&__title {
-		margin: 0;
-		font-size: var(--wpds-typography-font-size-2xl);
-		font-weight: var(--wpds-typography-font-weight-emphasis);
-		line-height: var(--wpds-typography-line-height-2xl);
-		color: var(--wpds-color-foreground-content-neutral);
-	}
-
-	&__tagline {
-		margin: 6px 0 0;
-		max-width: 60ch;
-		color: var(--wpds-color-foreground-content-neutral-weak);
-	}
-
-	&__tabs {
-
-		.components-tab-panel__tabs {
-			margin-bottom: 24px;
-			border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
-		}
-	}
-
-	&__body {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 300px;
-		gap: 24px;
-		align-items: start;
-
-		@media (max-width: $psst-two-column) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		// A tab that renders no sidebar, so its content can use the full width.
-		&.is-wide {
-			grid-template-columns: minmax(0, 1fr);
-		}
-	}
-
-	&__main {
-		min-width: 0;
-	}
-
-	&__aside {
-		display: flex;
-		flex-direction: column;
-		gap: var(--wpds-dimension-gap-lg);
-	}
-
-	&__aside-card {
-
-		p {
-			margin: 0 0 12px;
-			color: var(--wpds-color-foreground-content-neutral-weak);
-		}
-
-		p:last-child {
-			margin-bottom: 0;
-		}
-	}
-
-	&__aside-title {
-		display: flex;
-		align-items: center;
-		gap: var(--wpds-dimension-gap-sm);
-		margin: 0 0 12px;
-		font-size: var(--wpds-typography-font-size-md);
-		font-weight: var(--wpds-typography-font-weight-emphasis);
-		color: var(--wpds-color-foreground-content-neutral);
-
-		svg {
-			fill: var(--wpds-color-foreground-interactive-brand);
-		}
-	}
-
-	&__aside-list {
-		display: flex;
-		flex-direction: column;
-		gap: var(--wpds-dimension-gap-md);
-		margin: 0;
-		padding: 0;
-		list-style: none;
-
-		li {
-			display: flex;
-			gap: var(--wpds-dimension-gap-sm);
-			margin: 0;
-			color: var(--wpds-color-foreground-content-neutral-weak);
-		}
-	}
-
-	&__aside-icon {
-		display: inline-flex;
-		flex: 0 0 auto;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
-		border-radius: var(--wpds-border-radius-sm);
-		background: var(--wpds-color-background-surface-brand);
-		color: var(--wpds-color-foreground-interactive-brand);
-
-		svg {
-			fill: currentcolor;
-		}
-	}
-
-	&__aside-actions {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--wpds-dimension-gap-xs);
-	}
-
-	&__aside-logo {
-		display: block;
-		margin-bottom: 12px;
-		border-radius: var(--wpds-border-radius-xs);
-
-		svg {
-			display: block;
-			height: 26px;
-			width: auto;
-		}
-
-		&:focus {
-			box-shadow: none;
-		}
-
-		&:focus-visible {
-			outline: var(--wpds-border-width-focus) solid var(--wpds-color-stroke-focus);
-			outline-offset: 4px;
-		}
-	}
-
-	&__view {
-		display: flex;
-		flex-direction: column;
-		gap: var(--wpds-dimension-gap-lg);
-	}
 
 	&__lead {
 		margin: 0;
@@ -268,32 +35,37 @@ $psst-two-column: 1100px;
 		color: var(--wpds-color-foreground-content-neutral-weak);
 	}
 
-	&__section {
+	// Search and create on one line, help text under both. `align-items: end`
+	// lines the button up with the field, not the label above it.
+	&__page-picker {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto auto;
+		align-items: end;
+		column-gap: var(--wpds-dimension-gap-sm);
+		row-gap: var(--wpds-dimension-gap-xs);
 
-		.components-card__header h2 {
-			margin: 0;
-			font-size: var(--wpds-typography-font-size-md);
-		}
-
-		.components-card__header p {
-			margin: 4px 0 0;
-			color: var(--wpds-color-foreground-content-neutral-weak);
-		}
-
-		.components-card__body > * + * {
-			margin-top: 16px;
+		// Narrow enough and the row becomes three stacked rows, which is
+		// where the flat list was to begin with.
+		@media (max-width: 782px) {
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: start;
 		}
 	}
 
-	&__page-picker {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--wpds-dimension-gap-xs);
+	&__page-picker-search {
+		min-width: 0;
+	}
 
-		.components-button {
-			margin-left: -8px;
-		}
+	&__page-picker-or {
+		padding-bottom: 8px;
+		color: var(--wpds-color-foreground-content-neutral-weak);
+	}
+
+	&__page-picker-help {
+		grid-column: 1 / -1;
+		margin: 0;
+		color: var(--wpds-color-foreground-content-neutral-weak);
+		font-size: var(--wpds-typography-font-size-sm);
 	}
 
 	/* A page that is set up but not currently in use, because accounts are off. */
@@ -397,14 +169,6 @@ $psst-two-column: 1100px;
 		color: var(--wpds-color-foreground-content-neutral-weak);
 	}
 
-	&__notices {
-		position: fixed;
-		bottom: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 100;
-	}
-
 	&__health {
 		display: grid;
 		gap: 0;
@@ -493,26 +257,6 @@ $psst-two-column: 1100px;
 		.dataviews-item-actions
 		.components-button:not(.dataviews-all-actions-button) {
 			opacity: 1;
-		}
-	}
-
-	&__footer {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--wpds-dimension-gap-lg);
-		padding: 24px 0 32px;
-		margin-top: 16px;
-		border-top: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral);
-		font-size: var(--wpds-typography-font-size-sm);
-
-		a {
-			color: var(--wpds-color-foreground-content-neutral-weak);
-			text-decoration: none;
-
-			&:hover,
-			&:focus {
-				color: var(--wpds-color-foreground-interactive-brand);
-			}
 		}
 	}
 }

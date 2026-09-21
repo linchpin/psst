@@ -8,9 +8,6 @@ import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	Button,
-	Card,
-	CardBody,
-	CardHeader,
 	CheckboxControl,
 	ExternalLink,
 	Flex,
@@ -23,32 +20,14 @@ import {
 } from '@wordpress/components';
 
 /**
+ * External dependencies
+ */
+import { DangerZone, SettingsCard } from '@linchpinagency/ui';
+
+/**
  * Internal dependencies
  */
 import { useRoute } from '../hooks';
-
-/**
- * A card with a title and an optional description.
- *
- * @param {Object}  props             Props.
- * @param {string}  props.title       Title.
- * @param {string}  props.description Description.
- * @param {Element} props.children    Fields.
- * @return {Element} Card.
- */
-function Section( { title, description, children } ) {
-	return (
-		<Card className="psst-admin__section">
-			<CardHeader>
-				<div>
-					<h2>{ title }</h2>
-					{ description && <p>{ description }</p> }
-				</div>
-			</CardHeader>
-			<CardBody>{ children }</CardBody>
-		</Card>
-	);
-}
 
 /**
  * The wp-config.php lines that lock a Turnstile key.
@@ -226,8 +205,8 @@ export default function SettingsView() {
 	};
 
 	return (
-		<div className="psst-admin__view">
-			<Section
+		<>
+			<SettingsCard
 				title={ __( 'Expiration', 'psst' ) }
 				description={ __(
 					'Which lifetimes a sender may choose, and which is pre-selected.',
@@ -259,9 +238,9 @@ export default function SettingsView() {
 						set( 'ttl_default' )( Number( value ) )
 					}
 				/>
-			</Section>
+			</SettingsCard>
 
-			<Section
+			<SettingsCard
 				title={ __( 'Limits', 'psst' ) }
 				description={ __(
 					'Size and rate limits. Rate limits are per hour and per visitor; zero disables one.',
@@ -347,9 +326,9 @@ export default function SettingsView() {
 					] }
 					onChange={ set( 'trusted_proxy_header' ) }
 				/>
-			</Section>
+			</SettingsCard>
 
-			<Section
+			<SettingsCard
 				title={ __( 'Turnstile', 'psst' ) }
 				description={ __(
 					'Optional Cloudflare Turnstile challenge on the create form. Needs both keys. The secret key is stored write-only and never shown again.',
@@ -402,9 +381,9 @@ export default function SettingsView() {
 				<ExternalLink href="https://developers.cloudflare.com/turnstile/">
 					{ __( 'About Turnstile', 'psst' ) }
 				</ExternalLink>
-			</Section>
+			</SettingsCard>
 
-			<Section
+			<SettingsCard
 				title={ __( 'Accounts', 'psst' ) }
 				description={ __(
 					'Optional. Lets people sign in on the front end and keep a record of the secrets they have sent. Everything here is off until you turn it on, and sending a secret never requires an account unless you say so.',
@@ -544,9 +523,15 @@ export default function SettingsView() {
 						) }
 					</>
 				) }
-			</Section>
+			</SettingsCard>
 
-			<Section title={ __( 'Uninstall', 'psst' ) }>
+			<DangerZone
+				title={ __( 'Uninstall', 'psst' ) }
+				description={ __(
+					'What Psst leaves behind when the plugin is deleted.',
+					'psst'
+				) }
+			>
 				<ToggleControl
 					__nextHasNoMarginBottom
 					label={ __(
@@ -560,7 +545,7 @@ export default function SettingsView() {
 					checked={ !! draft.delete_on_uninstall }
 					onChange={ set( 'delete_on_uninstall' ) }
 				/>
-			</Section>
+			</DangerZone>
 
 			<Flex
 				className="psst-admin__actions"
@@ -586,6 +571,6 @@ export default function SettingsView() {
 					{ __( 'Reset to defaults', 'psst' ) }
 				</Button>
 			</Flex>
-		</div>
+		</>
 	);
 }
