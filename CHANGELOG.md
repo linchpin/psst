@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.0](https://github.com/linchpin/psst/compare/v2.2.0...v2.3.0) (2026-09-22)
+
+
+### Features ✨
+
+* **LINCHPIN-5639:** Build the admin screen on the shared Linchpin UI library ([16aa637](https://github.com/linchpin/psst/commit/16aa637cc5d85cc817f468039c0dcd00a16ee104))
+* **LINCHPIN-5639:** Build the admin screen on the shared Linchpin UI library ([9f1061d](https://github.com/linchpin/psst/commit/9f1061d31eb18bea633c047fab129c9f2ca71d55))
+
 ## [2.2.0](https://github.com/linchpin/psst/compare/v2.1.0...v2.2.0) (2026-09-20)
 
 

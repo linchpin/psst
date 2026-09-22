@@ -4,7 +4,7 @@
  * Plugin URI:        https://github.com/linchpin/psst
  * Description:       Pretty Secure Secret Transmissions. Share one-time, expiring secrets that are encrypted in the browser; the server only ever stores ciphertext it cannot read.
  * x-release-please-start-version
- * Version:           2.2.0
+ * Version:           2.3.0
  * x-release-please-end
  * Author:            Linchpin
  * Author URI:        https://linchpin.com
@@ -30,7 +30,7 @@ define( 'PSST_URL', plugin_dir_url( __FILE__ ) );
 define( 'PSST_BASENAME', plugin_basename( __FILE__ ) );
 define( 'PSST_BLOCK_PATH', plugin_dir_path( __FILE__ ) . 'blocks/' );
 // x-release-please-start-version.
-define( 'PSST_VERSION', '2.2.0' );
+define( 'PSST_VERSION', '2.3.0' );
 // x-release-please-end.
 
 /*
