@@ -168,24 +168,35 @@ export default function PagePicker( { label, help, kind, value, onChange } ) {
 		}
 	};
 
+	/*
+	 * Both ways of filling the slot sit on one line, because they are one
+	 * choice. The "or" is decorative: the help text below says it in a
+	 * sentence.
+	 */
 	return (
 		<div className="psst-admin__page-picker">
-			<ComboboxControl
-				__next40pxDefaultSize
-				__nextHasNoMarginBottom
-				label={ label }
-				help={ help }
-				value={ value ? String( value ) : '' }
-				options={ options }
-				isLoading={ isSearching }
-				onFilterValueChange={ setSearch }
-				onChange={ ( next ) => onChange( next ? Number( next ) : 0 ) }
-				placeholder={ __( 'Search pages…', 'psst' ) }
-				allowReset
-			/>
+			<div className="psst-admin__page-picker-search">
+				<ComboboxControl
+					__next40pxDefaultSize
+					__nextHasNoMarginBottom
+					label={ label }
+					value={ value ? String( value ) : '' }
+					options={ options }
+					isLoading={ isSearching }
+					onFilterValueChange={ setSearch }
+					onChange={ ( next ) =>
+						onChange( next ? Number( next ) : 0 )
+					}
+					placeholder={ __( 'Search pages…', 'psst' ) }
+					allowReset
+				/>
+			</div>
+			<span className="psst-admin__page-picker-or" aria-hidden="true">
+				{ __( 'or', 'psst' ) }
+			</span>
 			<Button
 				__next40pxDefaultSize
-				variant="tertiary"
+				variant="secondary"
 				icon={ plus }
 				isBusy={ isCreating }
 				disabled={ isCreating }
@@ -193,6 +204,7 @@ export default function PagePicker( { label, help, kind, value, onChange } ) {
 			>
 				{ __( 'Create a new page', 'psst' ) }
 			</Button>
+			{ help && <p className="psst-admin__page-picker-help">{ help }</p> }
 		</div>
 	);
 }

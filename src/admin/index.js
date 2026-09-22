@@ -1,8 +1,12 @@
 /**
- * The Psst admin app: settings, the secrets list, and health.
+ * The Psst admin app: settings, pages, the secrets list, health and About
+ * Linchpin.
  *
- * Mounted on the page Controller\Admin\Admin_Page registers, the same shape as
- * mantle and linchpin-blocks.
+ * Mounted on the page Controller\Admin\Admin_Page registers. Every piece of
+ * chrome around the views — the brand bar, the page header, the two-column
+ * body, the help column and the footer — comes from @linchpinagency/ui, so
+ * what is left in this file is Psst's: which sections exist, what the header
+ * says, and where its two buttons go.
  */
 
 /**
@@ -11,20 +15,33 @@
 import { createRoot } from '@wordpress/element';
 import domReady from '@wordpress/dom-ready';
 import { __ } from '@wordpress/i18n';
-import { SlotFillProvider, TabPanel } from '@wordpress/components';
-import { ThemeProvider } from '@wordpress/theme';
+import { Button } from '@wordpress/components';
+import { external } from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
+
+/**
+ * External dependencies
+ */
+import {
+	AboutLinchpinPage,
+	currentSection,
+	LinchpinAdminFooter,
+	LinchpinAdminFrame,
+	LinchpinAdminLayout,
+	LinchpinAdminPage,
+	LinchpinAdminTopBar,
+	LinchpinNotices,
+	sectionNavigation,
+} from '@linchpinagency/ui';
+import '@linchpinagency/ui/style.css';
 
 /**
  * Internal dependencies
  */
 import './../scss/admin.scss';
-import { BRAND, brandStyle } from './brand';
-import TopBar from './components/topbar';
-import Masthead from './components/masthead';
+import { BRAND, LINKS } from './brand';
 import Sidebar from './components/sidebar';
-import Footer from './components/footer';
-import Notices from './components/notices';
+import { ReactComponent as PsstLogo } from './logos/psst.svg';
 import SettingsView from './views/settings';
 import PagesView from './views/pages';
 import SecretsView from './views/secrets';
@@ -40,96 +57,58 @@ if ( boot.nonce ) {
 	apiFetch.use( apiFetch.createNonceMiddleware( boot.nonce ) );
 }
 
-const TABS = [
-	{
-		name: 'settings',
-		title: __( 'Settings', 'psst' ),
-		className: 'psst-admin__tab',
-	},
-	{
-		name: 'pages',
-		title: __( 'Pages', 'psst' ),
-		className: 'psst-admin__tab',
-	},
-	{
-		name: 'secrets',
-		title: __( 'Secrets', 'psst' ),
-		className: 'psst-admin__tab',
-	},
-	{
-		name: 'health',
-		title: __( 'Health', 'psst' ),
-		className: 'psst-admin__tab',
-	},
+const PLUGIN = {
+	name: __( 'Psst', 'psst' ),
+	slug: 'psst',
+	version: boot.version,
+};
+
+/*
+ * Sections are links, not tab state: `sectionNavigation()` builds one href
+ * per section and `currentSection()` reads the active one back out of the
+ * query string. So a section is linkable and bookmarkable, a save that
+ * reloads the screen lands where it started, and the `?tab=` URLs the
+ * end-to-end suite already navigates to keep working.
+ */
+const SECTIONS = [
+	{ name: 'settings', label: __( 'Settings', 'psst' ) },
+	{ name: 'pages', label: __( 'Pages', 'psst' ) },
+	{ name: 'secrets', label: __( 'Secrets', 'psst' ) },
+	{ name: 'health', label: __( 'Health', 'psst' ) },
+	{ name: 'about', label: __( 'About', 'psst' ) },
 ];
 
-/**
- * Which tab the URL asks for.
+/*
+ * Two sections render without the help column.
  *
- * @return {string} Tab name.
+ * The secrets table has eight columns and an actions cell; beside a 300px
+ * sidebar half of them have to be scrolled to, which is a poor trade for a
+ * panel of copy the reader has seen on every other section. The About page
+ * carries the agency's own help and contact links, so the help column beside
+ * it would say the same thing twice.
  */
-function initialTab() {
-	const requested = new URLSearchParams( window.location.search ).get(
-		'tab'
-	);
-
-	return TABS.some( ( tab ) => tab.name === requested )
-		? requested
-		: 'settings';
-}
+const FULL_WIDTH = [ 'secrets', 'about' ];
 
 /**
- * Keep the tab in the URL so a reload lands on the same one.
+ * The view behind a section.
  *
- * @param {string} tabName Tab name.
- */
-function rememberTab( tabName ) {
-	const params = new URLSearchParams( window.location.search );
-	params.set( 'tab', tabName );
-	window.history.replaceState(
-		null,
-		'',
-		`${ window.location.pathname }?${ params.toString() }`
-	);
-}
-
-/**
- * The view behind a tab.
- *
- * @param {Object} tab The active tab.
+ * @param {Object} props         Props.
+ * @param {string} props.section Section name.
  * @return {Element} View.
  */
-function renderTab( tab ) {
-	let view;
-
-	switch ( tab.name ) {
+function View( { section } ) {
+	switch ( section ) {
 		case 'pages':
-			view = <PagesView />;
-			break;
+			return <PagesView />;
 		case 'secrets':
-			view = <SecretsView />;
-			break;
+			return <SecretsView />;
 		case 'health':
-			view = <HealthView />;
-			break;
+			return <HealthView />;
+		case 'about':
+			return <AboutLinchpinPage />;
 		default:
-			view = <SettingsView />;
+			return <SettingsView />;
 	}
-
-	/*
-	 * The secrets table has eight columns and an actions cell. Beside a 300px
-	 * sidebar it has to be scrolled sideways to reach half of them, which is a
-	 * poor trade for a panel of explanatory copy the reader has seen on the
-	 * other three tabs. The table gets the whole width instead.
-	 */
-	const isWide = 'secrets' === tab.name;
-
-	return (
-		<div className={ `psst-admin__body${ isWide ? ' is-wide' : '' }` }>
-			<main className="psst-admin__main">{ view }</main>
-			{ ! isWide && <Sidebar /> }
-		</div>
-	);
 }
 
 /**
@@ -138,24 +117,71 @@ function renderTab( tab ) {
  * @return {Element} The app.
  */
 function App() {
+	const section = currentSection( { sections: SECTIONS } );
+
 	return (
-		<div className="psst-admin__frame" style={ brandStyle() }>
-			<TopBar version={ boot.version } />
-			<div className="psst-admin__shell">
-				<Masthead createUrl={ boot.createUrl } />
-				<Notices />
-				<TabPanel
-					className="psst-admin__tabs"
-					activeClass="is-active"
-					initialTabName={ initialTab() }
-					tabs={ TABS }
-					onSelect={ rememberTab }
+		<LinchpinAdminFrame
+			plugin={ PLUGIN }
+			brand={ BRAND }
+			links={ LINKS }
+			topBar={
+				<LinchpinAdminTopBar
+					logo={
+						<PsstLogo
+							role="img"
+							aria-label={ __( 'Psst', 'psst' ) }
+						/>
+					}
+				/>
+			}
+		>
+			<LinchpinAdminPage
+				subTitle={ __(
+					'One-time secrets, encrypted in the browser. The server never sees the contents, and neither does this screen.',
+					'psst'
+				) }
+				navigation={ sectionNavigation( { sections: SECTIONS } ) }
+				actions={
+					<>
+						{ boot.createUrl && (
+							<Button
+								__next40pxDefaultSize
+								variant="primary"
+								href={ boot.createUrl }
+								target="_blank"
+								rel="noreferrer"
+								icon={ external }
+								iconPosition="right"
+							>
+								{ __( 'Share a secret', 'psst' ) }
+							</Button>
+						) }
+						<Button
+							__next40pxDefaultSize
+							variant="secondary"
+							href={ LINKS.readme }
+							target="_blank"
+							rel="noreferrer"
+						>
+							{ __( 'Documentation', 'psst' ) }
+						</Button>
+					</>
+				}
+			>
+				<LinchpinNotices />
+
+				<LinchpinAdminLayout
+					label={ __( 'About Psst', 'psst' ) }
+					sidebar={
+						FULL_WIDTH.includes( section ) ? undefined : <Sidebar />
+					}
 				>
-					{ renderTab }
-				</TabPanel>
-				<Footer version={ boot.version } />
-			</div>
-		</div>
+					<View section={ section } />
+				</LinchpinAdminLayout>
+			</LinchpinAdminPage>
+
+			<LinchpinAdminFooter />
+		</LinchpinAdminFrame>
 	);
 }
 
@@ -167,24 +193,11 @@ domReady( () => {
 	}
 
 	/*
-	 * Seed the design system from Psst's own brand rather than the admin
-	 * colour scheme, the way Mantle does: the top bar is already a fixed brand
-	 * gradient, so following the profile would put a stranger's accent right
-	 * beneath it. `primary` only; the default light background stays. `isRoot`
-	 * hoists the resolved tokens to the document so the snackbar notices and
-	 * any popover portalled out of this tree read the same values. Exactly one
-	 * root provider is allowed per document, so this is the only place it may
-	 * be set.
+	 * No ThemeProvider and no SlotFillProvider here: `<LinchpinAdminFrame>`
+	 * owns both. It seeds the design system from Psst's brand rather than the
+	 * administrator's colour scheme, and hoists the resolved tokens to the
+	 * document so snackbars and popovers portalled out of this tree read the
+	 * same values.
 	 */
-	createRoot( mount ).render(
-		<ThemeProvider
-			isRoot
-			color={ { primary: BRAND.primary } }
-			cornerRadius="subtle"
-		>
-			<SlotFillProvider>
-				<App />
-			</SlotFillProvider>
-		</ThemeProvider>
-	);
+	createRoot( mount ).render( <App /> );
 } );

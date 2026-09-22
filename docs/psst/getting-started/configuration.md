@@ -6,13 +6,15 @@ Everything the plugin reads at runtime lives in one option, one write-only optio
 
 ## The admin screen
 
-Open **Settings → Psst**. When the Mantle plugin is active the screen moves to **Mantle → Psst**. Either way it requires the `manage_options` capability and has three tabs.
+Open **Settings → Psst**. When the Mantle plugin is active the screen moves to **Mantle → Psst**. Either way it requires the `manage_options` capability and has five sections. The sections are links rather than tab state, so `?tab=pages` is a real address that can be bookmarked, shared and survives a save.
 
 | Tab | What it does |
 | --- | --- |
 | Settings | Every key in the table below, plus Save and Reset to defaults. Reset preserves the two page ids. |
+| Pages | Every page the plugin needs, with the state of each: whether it exists, is published, and still contains the block that makes it work. Described below. |
 | Secrets | A metadata-only list of live secrets: short id, created, expires, status, pass phrase flag, size, and TTL. Each row has a **Shred** action. There is no way to see content because there is no key on the server. |
 | Health | Action Scheduler status, next sweep, active count, WP-Cron status, Turnstile status, remaining 1.x data, both page URLs, and the version. |
+| About | The standard About Linchpin page, rendered from [`@linchpinagency/ui`](https://github.com/linchpin/ui). The copy is the agency's and is the same in every Linchpin plugin. |
 
 The screen talks to the administrator REST routes described in the [REST API reference](../reference/rest-api.md) using a standard REST nonce.
 

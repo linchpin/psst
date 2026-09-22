@@ -300,31 +300,33 @@ export default function SecretsView() {
 	}
 
 	return (
-		<div className="psst-admin__view psst-admin__secrets">
+		<>
 			<p className="psst-admin__lead">
 				{ __(
 					'Every live secret, by its metadata. The contents are ciphertext that only the link can open, so there is nothing here to read.',
 					'psst'
 				) }
 			</p>
-			<DataViews
-				data={ items }
-				fields={ fields }
-				view={ view }
-				onChangeView={ setView }
-				actions={ actions }
-				isLoading={ isLoading }
-				paginationInfo={ {
-					totalItems: total,
-					totalPages: Math.max(
-						1,
-						Math.ceil( total / view.perPage )
-					),
-				} }
-				defaultLayouts={ { table: {} } }
-				getItemId={ ( item ) => String( item.id ) }
-				search={ false }
-			/>
-		</div>
+			<div className="psst-admin__secrets">
+				<DataViews
+					data={ items }
+					fields={ fields }
+					view={ view }
+					onChangeView={ setView }
+					actions={ actions }
+					isLoading={ isLoading }
+					paginationInfo={ {
+						totalItems: total,
+						totalPages: Math.max(
+							1,
+							Math.ceil( total / view.perPage )
+						),
+					} }
+					defaultLayouts={ { table: {} } }
+					getItemId={ ( item ) => String( item.id ) }
+					search={ false }
+				/>
+			</div>
+		</>
 	);
 }
