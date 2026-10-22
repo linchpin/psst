@@ -233,3 +233,17 @@ jobs:
                   echo "::error::$PACKAGE $VERSION is not resolvable from packagist.linchpin.com."
                   echo "::error::Listed but undownloadable means the R2 artifact could not be rebuilt — re-running this job is safe and retries it."
                   exit 1
+
+            # Linchpin Governing (packagist-plugin-manager, on this same site) opens
+            # the bump pull request on every site repository that runs this plugin.
+            # It finds a new release by polling every fifteen minutes; running it
+            # here opens those pull requests as soon as the release is served. Its
+            # dispatch is an Action Scheduler job, so that queue is run too. Never
+            # fatal: the release has shipped either way, and the poll still finds it.
+            - name: Open the bump pull requests now
+              continue-on-error: true
+              env:
+                  SSH_PASS: ${{ secrets.SSH_PASS }}
+              run: |
+                  sshpass -p "$SSH_PASS" ssh -p 22 pressable \
+                    "cd ~/htdocs && wp linchpin-governing releases run && wp action-scheduler run --group=linchpin-governing --hooks=linchpin_governing_open_pr"
