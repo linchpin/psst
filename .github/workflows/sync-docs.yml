@@ -39,7 +39,7 @@ jobs:
       # actions/checkout v7, pinned to a SHA because this job holds a WordPress token.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - uses: linchpin/docspress@v1
+      - uses: linchpin/docspress@v2
         with:
           mode: publish
           wordpress-url: https://docs.linchpin.com
