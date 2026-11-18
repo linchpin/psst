@@ -29,7 +29,7 @@ import {
 /**
  * External dependencies
  */
-import { SettingsCard } from '@linchpinagency/ui';
+import { SettingsCard, StatusBadge } from '@linchpinagency/ui';
 
 /**
  * Internal dependencies
@@ -84,7 +84,7 @@ const COPY = {
 };
 
 /**
- * The badge for a page's state.
+ * The badge for a page's state, as linchpin/ui's StatusBadge.
  *
  * @param {Object} props      Props.
  * @param {Object} props.page A page row from the REST payload.
@@ -93,30 +93,26 @@ const COPY = {
 function PageStatus( { page } ) {
 	const states = {
 		ok: {
-			className: 'is-ok',
+			tone: 'success',
 			label: __( 'Ready', 'psst' ),
 		},
 		missing: {
-			className: 'is-problem',
+			tone: 'error',
 			label: __( 'Not set', 'psst' ),
 		},
 		unpublished: {
-			className: 'is-problem',
+			tone: 'error',
 			label: __( 'Not published', 'psst' ),
 		},
 		no_block: {
-			className: 'is-warning',
+			tone: 'warning',
 			label: __( 'Missing its block', 'psst' ),
 		},
 	};
 
 	const state = states[ page.state ] || states.missing;
 
-	return (
-		<span className={ `psst-admin__badge ${ state.className }` }>
-			{ state.label }
-		</span>
-	);
+	return <StatusBadge tone={ state.tone }>{ state.label }</StatusBadge>;
 }
 
 /**

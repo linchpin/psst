@@ -6,8 +6,9 @@
  * settings cards, the snackbars, the footer and the danger zone are all the
  * library's, and `--lp-brand-*` comes
  * from the `defineBrand()` call in src/admin/brand.js. What remains here is
- * Psst's own furniture: the page picker, the page cards' status badges, the
- * Turnstile snippet, the health table and the secrets list. Every colour is a
+ * Psst's own furniture: the page picker, the Turnstile snippet and the secrets
+ * list. Status badges and the health facts are the library's too (StatusBadge
+ * and FactList). Every colour is a
  * `--wpds-*` design-system token, so the brand seed flows through these too.
  *
  * The library's stylesheet is imported first, from src/admin/index.js, and
@@ -87,34 +88,6 @@
 		word-break: break-all;
 	}
 
-	&__badge {
-		display: inline-block;
-		margin-left: 8px;
-		padding: 2px 8px;
-		border-radius: 999px;
-		font-size: var(--wpds-typography-font-size-xs);
-		font-weight: var(--wpds-typography-font-weight-emphasis);
-		line-height: 1.6;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		vertical-align: middle;
-
-		&.is-ok {
-			background: var(--wpds-color-background-surface-success-weak);
-			color: var(--wpds-color-foreground-content-success);
-		}
-
-		&.is-warning {
-			background: var(--wpds-color-background-surface-warning-weak);
-			color: var(--wpds-color-foreground-content-warning);
-		}
-
-		&.is-problem {
-			background: var(--wpds-color-background-surface-error-weak);
-			color: var(--wpds-color-foreground-content-error);
-		}
-	}
-
 	&__constants {
 		display: flex;
 		flex-direction: column;
@@ -167,46 +140,6 @@
 		gap: var(--wpds-dimension-gap-sm);
 		padding: 24px 0;
 		color: var(--wpds-color-foreground-content-neutral-weak);
-	}
-
-	&__health {
-		display: grid;
-		gap: 0;
-		margin: 0;
-	}
-
-	&__health-row {
-		display: grid;
-		grid-template-columns: minmax(140px, 200px) 1fr;
-		gap: var(--wpds-dimension-gap-lg);
-		padding: 10px 0;
-		border-bottom: var(--wpds-border-width-xs) solid var(--wpds-color-stroke-surface-neutral-weak);
-
-		&:last-child {
-			border-bottom: 0;
-		}
-
-		dt {
-			font-weight: var(--wpds-typography-font-weight-emphasis);
-		}
-
-		dd {
-			margin: 0;
-		}
-
-		&.is-warn dd {
-			color: var(--wpds-color-foreground-content-warning);
-		}
-
-		&.is-ok dd::before {
-			content: "";
-			display: inline-block;
-			width: 8px;
-			height: 8px;
-			margin-right: 8px;
-			border-radius: 50%;
-			background: var(--wpds-color-foreground-content-success);
-		}
 	}
 
 	&__expired {
